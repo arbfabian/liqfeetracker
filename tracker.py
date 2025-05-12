@@ -12,10 +12,10 @@ load_dotenv()
 ARBITRUM_RPC_URL = os.getenv('ARBITRUM_RPC')
 WALLET_ADDRESS = os.getenv('WALLET_ADDRESS') 
 DB_NAME = "fees_history.db" 
-CONFIG_FILE_POSITIONS = "positions_to_track.txt"
+CONFIG_FILE_POSITIONS = "positions_to_track.txt" # IDs werden hieraus gelesen
 
 # --- Konstanten ---
-NFPM_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88" # Uniswap V3 NonfungiblePositionManager
+NFPM_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88" 
 NFPM_ABI = json.loads("""
 [
     {
@@ -93,7 +93,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-def get_fees_for_date(date_str, position_id):
+def get_fees_for_date(date_str, position_id): # Nimmt jetzt position_id entgegen
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
@@ -113,7 +113,7 @@ def get_fees_for_date(date_str, position_id):
         }
     return None
 
-def save_fees_for_date(date_str, position_id, token0_symbol, token1_symbol, 
+def save_fees_for_date(date_str, position_id, token0_symbol, token1_symbol, # Nimmt jetzt position_id entgegen
                        owed0_raw, owed1_raw, owed0_actual, owed1_actual,
                        token0_usd=None, token1_usd=None, total_usd=None):
     conn = sqlite3.connect(DB_NAME)
@@ -168,7 +168,7 @@ def get_position_ids_from_file(filename=CONFIG_FILE_POSITIONS):
 # --- Hauptlogik ---
 def main():
     print("--- Starting Uniswap V3 Fee Tracker ---")
-    init_db() 
+    init_db() # Stellt sicher, dass die Tabelle mit dem korrekten Schema existiert
 
     if not ARBITRUM_RPC_URL or not WALLET_ADDRESS:
         print("Error: Missing environment variables (ARBITRUM_RPC, WALLET_ADDRESS)")
@@ -191,9 +191,10 @@ def main():
     today_date_str = today_utc.strftime('%Y-%m-%d')
     yesterday_date_str = (today_utc - timedelta(days=1)).strftime('%Y-%m-%d')
     
-    for position_nft_id in position_ids_to_track:
+    for position_nft_id in position_ids_to_track: # Schleife für jede ID
         print(f"\n--- Processing Position ID: {position_nft_id} on {today_date_str} ---")
         try:
+            # Ab hier die Logik für eine einzelne Position, aber innerhalb der Schleife
             position_details = nfpm_contract.functions.positions(position_nft_id).call()
             token0_address_checksum = Web3.to_checksum_address(position_details[2])
             token1_address_checksum = Web3.to_checksum_address(position_details[3])
@@ -243,6 +244,7 @@ def main():
                 current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
                 print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
 
+            # Wichtig: position_nft_id wird jetzt an save_fees_for_date übergeben
             save_fees_for_date(today_date_str, position_nft_id, token0_symbol, token1_symbol, 
                                unclaimed_fees_token0_raw, unclaimed_fees_token1_raw,
                                current_unclaimed_fees_token0_actual, current_unclaimed_fees_token1_actual,
@@ -251,7 +253,8 @@ def main():
                                current_total_unclaimed_usd_val if price_token0_usd and price_token1_usd else None)
             print(f"  Saved today's total unclaimed fees for position {position_nft_id} to database.")
 
-            yesterday_fees_data = get_fees_for_date(yesterday_date_str, position_nft_id)
+            # Wichtig: position_nft_id wird jetzt an get_fees_for_date übergeben
+            yesterday_fees_data = get_fees_for_date(yesterday_date_str, position_nft_id) 
             
             daily_earned_token0_actual = current_unclaimed_fees_token0_actual
             daily_earned_token1_actual = current_unclaimed_fees_token1_actual
