@@ -1,0 +1,15 @@
+{
+  "position_4456015": {
+    "2025-05-12": {
+      "token0_symbol": "WBTC",
+      "token1_symbol": "WETH",
+      "tokens_owed0_raw": 564,
+      "tokens_owed1_raw": 249903063713350,
+      "tokens_owed0_actual": 5.64e-06,
+      "tokens_owed1_actual": 0.00024990306371335,
+      "token0_usd_value": 0.57815076,
+      "token1_usd_value": 0.617607932630536,
+      "total_usd_value": 1.1957586926305361
+    }
+  }
+}

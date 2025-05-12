@@ -35,7 +35,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add fees_history.db # Oder wie auch immer deine Datendatei heißt
+          git add fees_data.json # Oder wie auch immer deine Datendatei heißt
           # Prüfen, ob es Änderungen gibt, um leere Commits zu vermeiden
           if git diff --staged --quiet; then
             echo "No changes to commit."

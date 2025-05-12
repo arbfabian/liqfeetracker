@@ -1,21 +1,20 @@
 import os
 import json
-import sqlite3 
-from datetime import datetime, timedelta, timezone 
+from datetime import datetime, timedelta, timezone
 from web3 import Web3
 from dotenv import load_dotenv
-import requests 
+import requests
 
 load_dotenv()
 
-# --- Konfiguration aus Umgebungsvariablen & Datei ---
+# --- Konfiguration ---
 ARBITRUM_RPC_URL = os.getenv('ARBITRUM_RPC')
-WALLET_ADDRESS = os.getenv('WALLET_ADDRESS') 
-DB_NAME = "fees_history.db" 
-CONFIG_FILE_POSITIONS = "positions_to_track.txt" # IDs werden hieraus gelesen
+WALLET_ADDRESS = os.getenv('WALLET_ADDRESS')
+CONFIG_FILE_POSITIONS = "positions_to_track.txt"
+JSON_DATA_FILE = "fees_data.json" # Name der JSON-Datei
 
-# --- Konstanten ---
-NFPM_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88" 
+# --- Konstanten (NFPM_ADDRESS, NFPM_ABI, ERC20_ABI_MINIMAL bleiben gleich) ---
+NFPM_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88"
 NFPM_ABI = json.loads("""
 [
     {
@@ -69,68 +68,30 @@ ERC20_ABI_MINIMAL = json.loads("""
 ]
 """)
 
-# --- Datenbankfunktionen ---
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    # Schema mit der position_id Spalte und PRIMARY KEY Anpassung
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS daily_unclaimed_fees (
-            date TEXT,
-            position_id INTEGER, 
-            token0_symbol TEXT,
-            token1_symbol TEXT,
-            tokens_owed0_raw INTEGER,
-            tokens_owed1_raw INTEGER,
-            tokens_owed0_actual REAL,
-            tokens_owed1_actual REAL,
-            token0_usd_value REAL, 
-            token1_usd_value REAL,
-            total_usd_value REAL,
-            PRIMARY KEY (date, position_id) 
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# --- JSON Daten laden ---
+def load_json_data(filename=JSON_DATA_FILE):
+    if os.path.exists(filename):
+        try:
+            with open(filename, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print(f"Warning: Could not decode JSON from {filename}. Starting with empty data.")
+            return {} # Bei Fehler leeres Dict zurückgeben
+    return {} # Wenn Datei nicht existiert, leeres Dict zurückgeben
 
-def get_fees_for_date(date_str, position_id): # Nimmt jetzt position_id entgegen
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT tokens_owed0_actual, tokens_owed1_actual, token0_symbol, token1_symbol, 
-               token0_usd_value, token1_usd_value, total_usd_value 
-        FROM daily_unclaimed_fees WHERE date = ? AND position_id = ?
-    """, (date_str, position_id))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return {
-            "token0_actual": row[0], "token1_actual": row[1], 
-            "token0_symbol": row[2], "token1_symbol": row[3],
-            "token0_usd_value": row[4] if row[4] is not None else 0.0, 
-            "token1_usd_value": row[5] if row[5] is not None else 0.0,
-            "total_usd_value": row[6] if row[6] is not None else 0.0
-        }
-    return None
+# --- JSON Daten speichern ---
+def save_json_data(data, filename=JSON_DATA_FILE):
+    try:
+        with open(filename, 'w') as f:
+            json.dump(data, f, indent=2) # indent für Lesbarkeit
+        print(f"Data saved to {filename}")
+    except Exception as e:
+        print(f"Error saving data to {filename}: {e}")
 
-def save_fees_for_date(date_str, position_id, token0_symbol, token1_symbol, # Nimmt jetzt position_id entgegen
-                       owed0_raw, owed1_raw, owed0_actual, owed1_actual,
-                       token0_usd=None, token1_usd=None, total_usd=None):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT OR REPLACE INTO daily_unclaimed_fees 
-        (date, position_id, token0_symbol, token1_symbol, tokens_owed0_raw, tokens_owed1_raw, 
-         tokens_owed0_actual, tokens_owed1_actual, 
-         token0_usd_value, token1_usd_value, total_usd_value) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
-    ''', (date_str, position_id, token0_symbol, token1_symbol, owed0_raw, owed1_raw, 
-          owed0_actual, owed1_actual, token0_usd, token1_usd, total_usd))
-    conn.commit()
-    conn.close()
 
-# --- Funktion zum Holen von Preisen ---
+# --- Funktion zum Holen von Preisen (get_single_token_price_coingecko bleibt gleich) ---
 def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one"):
+    # ... (Code von vorher, keine Änderung nötig) ...
     try:
         checksum_address = Web3.to_checksum_address(contract_address)
         url = f"https://api.coingecko.com/api/v3/coins/{platform_id}/contract/{checksum_address}"
@@ -139,17 +100,16 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
         response.raise_for_status()
         data = response.json()
         price_usd = data.get("market_data", {}).get("current_price", {}).get("usd")
-        if price_usd is None: 
-            print(f"    Warning: Could not parse USD price for {checksum_address} from CoinGecko. Response: {data}")
+        if price_usd is None: print(f"    Warning: Could not parse USD price for {checksum_address} from CoinGecko. Response: {data}")
         return price_usd
-    except requests.exceptions.RequestException as e: 
-        print(f"    CoinGecko API request error for {contract_address}: {e}")
-    except Exception as e_gen: 
-        print(f"    Error fetching price for {contract_address}: {e_gen}")
+    except requests.exceptions.RequestException as e: print(f"    CoinGecko API request error for {contract_address}: {e}")
+    except Exception as e_gen: print(f"    Error fetching price for {contract_address}: {e_gen}")
     return None
 
-# --- Funktion zum Lesen der Positions-IDs ---
+
+# --- Funktion zum Lesen der Positions-IDs (get_position_ids_from_file bleibt gleich) ---
 def get_position_ids_from_file(filename=CONFIG_FILE_POSITIONS):
+    # ... (Code von vorher, keine Änderung nötig) ...
     position_ids = []
     try:
         if os.path.exists(filename):
@@ -165,10 +125,12 @@ def get_position_ids_from_file(filename=CONFIG_FILE_POSITIONS):
         print(f"Error reading position ID file '{filename}': {e}")
     return position_ids
 
+
 # --- Hauptlogik ---
 def main():
-    print("--- Starting Uniswap V3 Fee Tracker ---")
-    init_db() # Stellt sicher, dass die Tabelle mit dem korrekten Schema existiert
+    print("--- Starting Uniswap V3 Fee Tracker (JSON Version) ---")
+    
+    all_data = load_json_data() # Lädt die gesamte JSON-Datenbank
 
     if not ARBITRUM_RPC_URL or not WALLET_ADDRESS:
         print("Error: Missing environment variables (ARBITRUM_RPC, WALLET_ADDRESS)")
@@ -191,10 +153,14 @@ def main():
     today_date_str = today_utc.strftime('%Y-%m-%d')
     yesterday_date_str = (today_utc - timedelta(days=1)).strftime('%Y-%m-%d')
     
-    for position_nft_id in position_ids_to_track: # Schleife für jede ID
+    for position_nft_id in position_ids_to_track:
+        position_key = f"position_{position_nft_id}" # Eindeutiger Schlüssel für jede Position in JSON
+        if position_key not in all_data:
+            all_data[position_key] = {} # Initialisiere Daten für neue Position
+
         print(f"\n--- Processing Position ID: {position_nft_id} on {today_date_str} ---")
         try:
-            # Ab hier die Logik für eine einzelne Position, aber innerhalb der Schleife
+            # ... (Blockchain-Abfragen für Gebühren, Token-Details - bleibt wie im SQLite-Code) ...
             position_details = nfpm_contract.functions.positions(position_nft_id).call()
             token0_address_checksum = Web3.to_checksum_address(position_details[2])
             token1_address_checksum = Web3.to_checksum_address(position_details[3])
@@ -244,54 +210,78 @@ def main():
                 current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
                 print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
 
-            # Wichtig: position_nft_id wird jetzt an save_fees_for_date übergeben
-            save_fees_for_date(today_date_str, position_nft_id, token0_symbol, token1_symbol, 
-                               unclaimed_fees_token0_raw, unclaimed_fees_token1_raw,
-                               current_unclaimed_fees_token0_actual, current_unclaimed_fees_token1_actual,
-                               current_unclaimed_token0_usd_val if price_token0_usd else None, 
-                               current_unclaimed_token1_usd_val if price_token1_usd else None,
-                               current_total_unclaimed_usd_val if price_token0_usd and price_token1_usd else None)
-            print(f"  Saved today's total unclaimed fees for position {position_nft_id} to database.")
+            # Speichere die heutigen Gesamt unbeanspruchten Gebühren für diese Position und dieses Datum
+            if today_date_str not in all_data[position_key]:
+                all_data[position_key][today_date_str] = {}
+            
+            all_data[position_key][today_date_str]['token0_symbol'] = token0_symbol
+            all_data[position_key][today_date_str]['token1_symbol'] = token1_symbol
+            all_data[position_key][today_date_str]['tokens_owed0_raw'] = unclaimed_fees_token0_raw
+            all_data[position_key][today_date_str]['tokens_owed1_raw'] = unclaimed_fees_token1_raw
+            all_data[position_key][today_date_str]['tokens_owed0_actual'] = current_unclaimed_fees_token0_actual
+            all_data[position_key][today_date_str]['tokens_owed1_actual'] = current_unclaimed_fees_token1_actual
+            all_data[position_key][today_date_str]['token0_usd_value'] = current_unclaimed_token0_usd_val if price_token0_usd else None
+            all_data[position_key][today_date_str]['token1_usd_value'] = current_unclaimed_token1_usd_val if price_token1_usd else None
+            all_data[position_key][today_date_str]['total_usd_value'] = current_total_unclaimed_usd_val if price_token0_usd and price_token1_usd else None
+            
+            print(f"  Today's total unclaimed fees for position {position_nft_id} prepared for JSON.")
 
-            # Wichtig: position_nft_id wird jetzt an get_fees_for_date übergeben
-            yesterday_fees_data = get_fees_for_date(yesterday_date_str, position_nft_id) 
+            # Hole die Daten von gestern, um die täglichen Gebühren zu berechnen
+            yesterday_data_for_position = all_data[position_key].get(yesterday_date_str)
             
             daily_earned_token0_actual = current_unclaimed_fees_token0_actual
             daily_earned_token1_actual = current_unclaimed_fees_token1_actual
             
-            daily_earned_token0_usd_val = 0.0
-            daily_earned_token1_usd_val = 0.0
-            daily_total_earned_usd_val = 0.0
+            daily_earned_token0_usd_val = current_unclaimed_token0_usd_val
+            daily_earned_token1_usd_val = current_unclaimed_token1_usd_val
+            daily_total_earned_usd_val = current_total_unclaimed_usd_val
 
-            if yesterday_fees_data:
-                daily_earned_token0_actual -= yesterday_fees_data.get("token0_actual", 0)
-                daily_earned_token1_actual -= yesterday_fees_data.get("token1_actual", 0)
+            if yesterday_data_for_position:
+                daily_earned_token0_actual -= yesterday_data_for_position.get("tokens_owed0_actual", 0)
+                daily_earned_token1_actual -= yesterday_data_for_position.get("tokens_owed1_actual", 0)
+                
+                if price_token0_usd is not None: # Nur berechnen, wenn aktueller Preis da ist
+                    prev_usd0 = yesterday_data_for_position.get("token0_usd_value")
+                    if prev_usd0 is not None : daily_earned_token0_usd_val -= prev_usd0 #Vorsicht: Preise ändern sich!
+                else: daily_earned_token0_usd_val = 0 # Wenn kein aktueller Preis, dann keine Tages-USD
+
+                if price_token1_usd is not None:
+                    prev_usd1 = yesterday_data_for_position.get("token1_usd_value")
+                    if prev_usd1 is not None : daily_earned_token1_usd_val -= prev_usd1
+                else: daily_earned_token1_usd_val = 0
+                
+                if price_token0_usd and price_token1_usd:
+                    prev_total_usd = yesterday_data_for_position.get("total_usd_value")
+                    if prev_total_usd is not None : daily_total_earned_usd_val -= prev_total_usd
+                else: daily_total_earned_usd_val = 0
+
                 print(f"  Yesterday's total unclaimed for {position_nft_id}: "
-                      f"{yesterday_fees_data.get('token0_symbol', 'N/A')}: {yesterday_fees_data.get('token0_actual', 0):.8f} "
-                      f"($ {yesterday_fees_data.get('token0_usd_value', 0.0):.2f}), "
-                      f"{yesterday_fees_data.get('token1_symbol', 'N/A')}: {yesterday_fees_data.get('token1_actual', 0):.8f} "
-                      f"($ {yesterday_fees_data.get('token1_usd_value', 0.0):.2f})")
-                print(f"  Yesterday's total USD value: $ {yesterday_fees_data.get('total_usd_value', 0.0):.2f}")
+                      f"{yesterday_data_for_position.get('token0_symbol', 'N/A')}: {yesterday_data_for_position.get('tokens_owed0_actual', 0):.8f} "
+                      f"($ {yesterday_data_for_position.get('token0_usd_value', 0.0):.2f}), "
+                      f"{yesterday_data_for_position.get('token1_symbol', 'N/A')}: {yesterday_data_for_position.get('tokens_owed1_actual', 0):.8f} "
+                      f"($ {yesterday_data_for_position.get('token1_usd_value', 0.0):.2f})")
+                print(f"  Yesterday's total USD value: $ {yesterday_data_for_position.get('total_usd_value', 0.0):.2f}")
             else:
                 print(f"  No data found for {yesterday_date_str} for position {position_nft_id}. Displaying total unclaimed as today's earned.")
 
             daily_earned_token0_actual = max(0, daily_earned_token0_actual)
             daily_earned_token1_actual = max(0, daily_earned_token1_actual)
+            # Für USD ist es komplexer, da Preise schwanken; einfache Differenz ist hier nicht immer "verdient"
+            # Man sollte eher die heute verdienten Token-Mengen mit aktuellen Preisen bewerten.
+            if price_token0_usd: daily_earned_token0_usd_val = daily_earned_token0_actual * price_token0_usd
+            else: daily_earned_token0_usd_val = 0
+            if price_token1_usd: daily_earned_token1_usd_val = daily_earned_token1_actual * price_token1_usd
+            else: daily_earned_token1_usd_val = 0
+            if price_token0_usd and price_token1_usd : daily_total_earned_usd_val = daily_earned_token0_usd_val + daily_earned_token1_usd_val
+            else: daily_total_earned_usd_val = 0
+
 
             print(f"\n  --- Fees Earned on {today_date_str} for Position {position_nft_id} ---")
             print(f"    {token0_symbol}: {daily_earned_token0_actual:.8f}")
             print(f"    {token1_symbol}: {daily_earned_token1_actual:.8f}")
-
-            if price_token0_usd is not None:
-                daily_earned_token0_usd_val = daily_earned_token0_actual * price_token0_usd
-                print(f"    {token0_symbol} USD Value (Earned Today): ${daily_earned_token0_usd_val:.2f}")
-            if price_token1_usd is not None:
-                daily_earned_token1_usd_val = daily_earned_token1_actual * price_token1_usd
-                print(f"    {token1_symbol} USD Value (Earned Today): ${daily_earned_token1_usd_val:.2f}")
-            
-            if price_token0_usd is not None and price_token1_usd is not None:
-                daily_total_earned_usd_val = daily_earned_token0_usd_val + daily_earned_token1_usd_val
-                print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
+            print(f"    {token0_symbol} USD Value (Earned Today): ${daily_earned_token0_usd_val:.2f}")
+            print(f"    {token1_symbol} USD Value (Earned Today): ${daily_earned_token1_usd_val:.2f}")
+            print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
         
         except Exception as e_inner:
             print(f"An error occurred processing position ID {position_nft_id}: {e_inner}")
@@ -299,7 +289,8 @@ def main():
             traceback.print_exc()
             print(f"--- Finished processing position {position_nft_id} With Errors ---")
         
-    print("\n--- Fee Tracker Finished All Positions (Successfully or with handled errors) ---")
+    save_json_data(all_data) # Speichere die aktualisierte JSON-Datenbank
+    print("\n--- Fee Tracker Finished All Positions (JSON Version) ---")
 
 if __name__ == "__main__":
     main()
