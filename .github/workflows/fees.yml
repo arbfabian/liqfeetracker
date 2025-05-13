@@ -5,6 +5,10 @@ on:
     - cron: '0 20 * * *' # 20:00 UTC (ist 22:00 CEST / 21:00 CET)
   workflow_dispatch: # Ermöglicht manuellen Start
 
+# NEU: Berechtigungen für den Job definieren
+permissions:
+  contents: write # Erforderlich, um Änderungen ins Repo zu pushen
+
 jobs:
   track-fees:
     runs-on: ubuntu-latest
@@ -27,7 +31,6 @@ jobs:
       - name: Run fee tracker script
         env:
           ARBITRUM_RPC: ${{ secrets.ARBITRUM_RPC }}
-          POSITION_ID: ${{ secrets.POSITION_ID }}
           WALLET_ADDRESS: ${{ secrets.WALLET_ADDRESS }}
         run: python tracker.py
 
