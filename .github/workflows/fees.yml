@@ -2,7 +2,7 @@ name: Uniswap V3 Fee Tracker
 
 on:
   schedule:
-    - cron: '0 20 * * *' # 20:00 UTC (ist 22:00 CEST / 21:00 CET)
+    - cron: '0 19 * * *' # 20:00 UTC (ist 22:00 CEST / 21:00 CET)
   workflow_dispatch: # Ermöglicht manuellen Start
 
 # NEU: Berechtigungen für den Job definieren
