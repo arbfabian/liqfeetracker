@@ -1,7 +1,7 @@
 {
   "position_4456015": {
     "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-12T20:00:00Z", // Zeile 4
+    "last_updated_utc": "2025-05-12T20:00:00Z",
     "history": {
       "2025-05-12": { 
         "token0_symbol": "WBTC", 
