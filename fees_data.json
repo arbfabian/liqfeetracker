@@ -1,11 +1,11 @@
 {
   "position_4456015": {
     "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-12T20:00:00Z", // Zeit der letzten Aktualisierung (simuliert für gestern Abend)
+    "last_updated_utc": "2025-05-12T20:00:00Z", // Zeile 4
     "history": {
-      "2025-05-12": { // Repräsentiert "gestern" (12. Mai 2025)
-        "token0_symbol": "WBTC", // Kann auch aus "token_pair_symbols" abgeleitet werden
-        "token1_symbol": "WETH", // Kann auch aus "token_pair_symbols" abgeleitet werden
+      "2025-05-12": { 
+        "token0_symbol": "WBTC", 
+        "token1_symbol": "WETH", 
         "total_unclaimed_fees": {
           "token0_actual": 5.76e-06,
           "token1_actual": 0.000249908891304729,
@@ -13,7 +13,7 @@
           "token1_usd": 0.620148913772685,
           "total_usd": 1.2118161137726848
         },
-        "daily_earned_fees": { // Da es der "erste" simulierte Eintrag ist, sind daily = total
+        "daily_earned_fees": { 
           "token0_actual": 5.76e-06,
           "token1_actual": 0.000249908891304729,
           "token0_usd": 0.5916672,
