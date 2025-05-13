@@ -10,6 +10,17 @@
       "token0_usd_value": 0.5916672,
       "token1_usd_value": 0.620148913772685,
       "total_usd_value": 1.2118161137726848
+    },
+    "2025-05-13": {
+      "token0_symbol": "WBTC",
+      "token1_symbol": "WETH",
+      "tokens_owed0_raw": 2216,
+      "tokens_owed1_raw": 868566289969425,
+      "tokens_owed0_actual": 2.216e-05,
+      "tokens_owed1_actual": 0.000868566289969425,
+      "token0_usd_value": 2.29194232,
+      "token1_usd_value": 2.2428553022735476,
+      "total_usd_value": 4.5347976222735475
     }
   }
 }
