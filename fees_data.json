@@ -1,52 +1,32 @@
 {
   "position_4456015": {
-    "2025-05-12": {
-      "token0_symbol": "WBTC",
-      "token1_symbol": "WETH",
-      "tokens_owed0_raw": 576,
-      "tokens_owed1_raw": 249908891304729,
-      "tokens_owed0_actual": 5.76e-06,
-      "tokens_owed1_actual": 0.000249908891304729,
-      "token0_usd_value": 0.5916672,
-      "token1_usd_value": 0.620148913772685,
-      "total_usd_value": 1.2118161137726848
-    },
-    "2025-05-13": {
-      "token0_symbol": "WBTC",
-      "token1_symbol": "WETH",
-      "tokens_owed0_raw": 2216,
-      "tokens_owed1_raw": 868566289969425,
-      "tokens_owed0_actual": 2.216e-05,
-      "tokens_owed1_actual": 0.000868566289969425,
-      "token0_usd_value": 2.29194232,
-      "token1_usd_value": 2.2428553022735476,
-      "total_usd_value": 4.5347976222735475
-    },
+    "token_pair_symbols": "WBTC/WETH",
+    "last_updated_utc": "2025-05-13T20:00:00Z", // Fiktive Zeit der letzten Aktualisierung (gestern)
     "history": {
-      "2025-05-13": {
+      "2025-05-20": { // Repräsentiert "gestern"
         "token0_symbol": "WBTC",
         "token1_symbol": "WETH",
         "total_unclaimed_fees": {
-          "token0_actual": 2.251e-05,
-          "token1_actual": 0.000880130597210391,
-          "token0_usd": 2.33847386,
-          "token1_usd": 2.2962871320398266,
-          "total_usd": 4.634760992039826
+          "token0_actual": 5.76e-06,
+          "token1_actual": 0.000249908891304729,
+          "token0_usd": 0.5916672,       // USD-Wert zum Zeitpunkt der "gestrigen" Abfrage
+          "token1_usd": 0.620148913772685, // USD-Wert zum Zeitpunkt der "gestrigen" Abfrage
+          "total_usd": 1.2118161137726848 // Der USD-Gesamtwert von "gestern"
         },
-        "daily_earned_fees": {
-          "token0_actual": 2.251e-05,
-          "token1_actual": 0.000880130597210391,
-          "token0_usd": 2.33847386,
-          "token1_usd": 2.2962871320398266,
-          "total_usd": 4.634760992039826
+        "daily_earned_fees": { // Für den ersten Eintrag in der History sind "daily" = "total"
+          "token0_actual": 5.76e-06,
+          "token1_actual": 0.000249908891304729,
+          "token0_usd": 0.5916672,       // Bewertet mit "gestrigen" Preisen
+          "token1_usd": 0.620148913772685, // Bewertet mit "gestrigen" Preisen
+          "total_usd": 1.2118161137726848
         },
         "raw_data_optional": {
-          "tokens_owed0_raw": 2251,
-          "tokens_owed1_raw": 880130597210391
+          "tokens_owed0_raw": 576,
+          "tokens_owed1_raw": 249908891304729
         }
       }
-    },
-    "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-13T17:15:46Z"
+    }
   }
+  // Hier könnten weitere Positionen mit ihrer jeweiligen History stehen,
+  // aber für den Test reicht diese eine.
 }
