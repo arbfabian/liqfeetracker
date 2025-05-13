@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uniswap V3 LP Fee Tracker</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .position-block { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-        .position-title { font-size: 1.5em; margin-bottom: 10px; }
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        h1 { text-align: center; color: #2c3e50; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #e8eff5; color: #2c3e50; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .position-block { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        #data-container p { text-align: center; font-size: 1.1em; }
+        #data-container p.error-message { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -20,22 +24,22 @@
     </div>
 
     <script>
-        // JavaScript zum Laden und Anzeigen der Daten kommt hier rein
         async function loadAndDisplayFees() {
             const dataContainer = document.getElementById('data-container');
-            dataContainer.innerHTML = '<p>Lade Gebührendaten...</p>'; // Ladeindikator
+            dataContainer.innerHTML = '<p>Lade Gebührendaten...</p>'; 
 
             try {
-                // Wichtig: Der Pfad zur JSON-Datei muss relativ zur index.html sein,
-                // wie sie auf GitHub Pages gehostet wird.
-                const response = await fetch('fees_data.json'); // Wenn fees_data.json im selben Ordner ist
-                // Falls dein Repository "liqfeetracker" heißt und die URL https://arbfabian.github.io/liqfeetracker/ ist:
-                // const response = await fetch('/liqfeetracker/fees_data.json'); // oder nur 'fees_data.json' wenn im root des gh-pages branch
+                // Pfad zur JSON-Datei. Anpassen, falls nötig (z.B. '/liqfeetracker/fees_data.json' oder nur 'fees_data.json')
+                // Für Tests mit GitHub Pages ist es oft am besten, den Pfad relativ zum Root des gehosteten Zweigs zu machen.
+                // Wenn dein Repo "liqfeetracker" heißt und du vom Root des main-Branches publizierst:
+                const response = await fetch('fees_data.json?v=' + new Date().getTime()); // Cache-Buster hinzugefügt
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status} - Konnte fees_data.json nicht laden.`);
+                    throw new Error(`HTTP error! status: ${response.status} - Konnte fees_data.json nicht laden. URL: ${response.url}`);
                 }
                 const allData = await response.json();
+                console.log("DEBUG: Geladene Rohdaten aus fees_data.json:", JSON.stringify(allData, null, 2));
+
 
                 if (Object.keys(allData).length === 0) {
                     dataContainer.innerHTML = '<p>Keine Daten gefunden in fees_data.json.</p>';
@@ -47,39 +51,55 @@
                 for (const positionIdKey in allData) {
                     if (allData.hasOwnProperty(positionIdKey)) {
                         const positionData = allData[positionIdKey];
+                        console.log(`DEBUG: Verarbeite Position ${positionIdKey}`);
                         
-                        // Stelle sicher, dass die neue Struktur vorhanden ist
-                        if (!positionData.history || !positionData.token_pair_symbols) {
-                            console.warn(`Position ${positionIdKey} hat nicht die erwartete neue Struktur (history, token_pair_symbols). Überspringe.`);
+                        if (!positionData.history || typeof positionData.history !== 'object' || !positionData.token_pair_symbols) {
+                            console.warn(`DEBUG: Position ${positionIdKey} hat nicht die erwartete neue Struktur (history-Objekt, token_pair_symbols). Überspringe. Daten:`, JSON.stringify(positionData, null, 2));
+                            htmlContent += `<div class="position-block"><p class="error-message">Daten für Position ${positionIdKey.replace('position_', '')} konnten nicht korrekt geladen werden (Strukturproblem).</p></div>`;
                             continue;
                         }
 
                         htmlContent += `<div class="position-block">`;
                         htmlContent += `<h2 class="position-title">Position ${positionIdKey.replace('position_', '')} (${positionData.token_pair_symbols})</h2>`;
                         
-                        // Tabelle für die Historie dieser Position
+                        const tokenSymbols = positionData.token_pair_symbols.split('/');
+                        const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
+                        const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
+
                         htmlContent += `<table>`;
-                        htmlContent += `<thead><tr><th>Datum</th><th>Verdient ${positionData.token_pair_symbols.split('/')[0]}</th><th>Verdient ${positionData.token_pair_symbols.split('/')[1]}</th><th>Verdient Total USD</th></tr></thead>`;
+                        htmlContent += `<thead><tr><th>Datum</th><th>Verdient ${token0DisplaySymbol}</th><th>Verdient ${token1DisplaySymbol}</th><th>Verdient Total USD</th></tr></thead>`;
                         htmlContent += `<tbody>`;
 
                         const history = positionData.history;
-                        const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a)); // Neueste zuerst
+                        console.log("DEBUG: History-Objekt für Position " + positionIdKey + ":", JSON.stringify(history, null, 2));
+                        
+                        const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a)); 
+                        console.log("DEBUG: Sortierte Daten (Datumsschlüssel) für Position " + positionIdKey + ":", sortedDates);
 
-                        for (const date of sortedDates) {
-                            if (history.hasOwnProperty(date)) {
-                                const dayData = history[date];
-                                if (dayData.daily_earned_fees) { // Prüfe, ob daily_earned_fees existiert
-                                    const earned = dayData.daily_earned_fees;
-                                    const token0Earned = earned.token0_actual !== null ? earned.token0_actual.toFixed(8) : 'N/A';
-                                    const token1Earned = earned.token1_actual !== null ? earned.token1_actual.toFixed(8) : 'N/A';
-                                    const totalUSDEarned = earned.total_usd !== null ? earned.total_usd.toFixed(2) : 'N/A';
+                        if (sortedDates.length === 0) {
+                             htmlContent += `<tr><td colspan="4">Keine historischen Daten für diese Position gefunden.</td></tr>`;
+                        } else {
+                            for (const date of sortedDates) {
+                                if (history.hasOwnProperty(date)) {
+                                    const dayData = history[date];
+                                    console.log("DEBUG: Verarbeite Datum:", date, "für Position", positionIdKey, "Daten:", JSON.stringify(dayData, null, 2));
 
-                                    htmlContent += `<tr>`;
-                                    htmlContent += `<td>${date}</td>`;
-                                    htmlContent += `<td>${token0Earned}</td>`;
-                                    htmlContent += `<td>${token1Earned}</td>`;
-                                    htmlContent += `<td>$${totalUSDEarned}</td>`;
-                                    htmlContent += `</tr>`;
+                                    if (dayData.daily_earned_fees && typeof dayData.daily_earned_fees === 'object') { 
+                                        const earned = dayData.daily_earned_fees;
+                                        const token0Earned = earned.token0_actual !== null && earned.token0_actual !== undefined ? parseFloat(earned.token0_actual).toFixed(8) : 'N/A';
+                                        const token1Earned = earned.token1_actual !== null && earned.token1_actual !== undefined ? parseFloat(earned.token1_actual).toFixed(8) : 'N/A';
+                                        const totalUSDEarned = earned.total_usd !== null && earned.total_usd !== undefined ? parseFloat(earned.total_usd).toFixed(2) : 'N/A';
+
+                                        htmlContent += `<tr>`;
+                                        htmlContent += `<td>${date}</td>`;
+                                        htmlContent += `<td>${token0Earned}</td>`;
+                                        htmlContent += `<td>${token1Earned}</td>`;
+                                        htmlContent += `<td>$${totalUSDEarned}</td>`;
+                                        htmlContent += `</tr>`;
+                                    } else {
+                                        console.warn(`DEBUG: 'daily_earned_fees' fehlt oder ist kein Objekt für Datum ${date} bei Position ${positionIdKey}`);
+                                        htmlContent += `<tr><td>${date}</td><td colspan="3">Daten für tägliche Gebühren nicht verfügbar.</td></tr>`;
+                                    }
                                 }
                             }
                         }
@@ -91,11 +111,13 @@
 
             } catch (error) {
                 console.error('Fehler beim Laden oder Verarbeiten der Daten:', error);
-                dataContainer.innerHTML = `<p style="color: red;">Fehler beim Laden der Daten: ${error.message}</p>`;
+                dataContainer.innerHTML = `<p class="error-message">Fehler beim Laden der Daten: ${error.message}</p>`;
+                if (error.stack) {
+                    console.error("Stacktrace:", error.stack);
+                }
             }
         }
 
-        // Funktion beim Laden der Seite aufrufen
         window.onload = loadAndDisplayFees;
     </script>
 </body>
