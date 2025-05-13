@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uniswap V3 LP Fee Tracker</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .position-block { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .position-title { font-size: 1.5em; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Uniswap V3 LP Gebühren Tracker</h1>
+    <div id="data-container">
+        <p>Lade Daten...</p>
+    </div>
+
+    <script>
+        // JavaScript zum Laden und Anzeigen der Daten kommt hier rein
+        async function loadAndDisplayFees() {
+            const dataContainer = document.getElementById('data-container');
+            dataContainer.innerHTML = '<p>Lade Gebührendaten...</p>'; // Ladeindikator
+
+            try {
+                // Wichtig: Der Pfad zur JSON-Datei muss relativ zur index.html sein,
+                // wie sie auf GitHub Pages gehostet wird.
+                const response = await fetch('fees_data.json'); // Wenn fees_data.json im selben Ordner ist
+                // Falls dein Repository "liqfeetracker" heißt und die URL https://arbfabian.github.io/liqfeetracker/ ist:
+                // const response = await fetch('/liqfeetracker/fees_data.json'); // oder nur 'fees_data.json' wenn im root des gh-pages branch
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - Konnte fees_data.json nicht laden.`);
+                }
+                const allData = await response.json();
+
+                if (Object.keys(allData).length === 0) {
+                    dataContainer.innerHTML = '<p>Keine Daten gefunden in fees_data.json.</p>';
+                    return;
+                }
+
+                let htmlContent = '';
+
+                for (const positionIdKey in allData) {
+                    if (allData.hasOwnProperty(positionIdKey)) {
+                        const positionData = allData[positionIdKey];
+                        
+                        // Stelle sicher, dass die neue Struktur vorhanden ist
+                        if (!positionData.history || !positionData.token_pair_symbols) {
+                            console.warn(`Position ${positionIdKey} hat nicht die erwartete neue Struktur (history, token_pair_symbols). Überspringe.`);
+                            continue;
+                        }
+
+                        htmlContent += `<div class="position-block">`;
+                        htmlContent += `<h2 class="position-title">Position ${positionIdKey.replace('position_', '')} (${positionData.token_pair_symbols})</h2>`;
+                        
+                        // Tabelle für die Historie dieser Position
+                        htmlContent += `<table>`;
+                        htmlContent += `<thead><tr><th>Datum</th><th>Verdient ${positionData.token_pair_symbols.split('/')[0]}</th><th>Verdient ${positionData.token_pair_symbols.split('/')[1]}</th><th>Verdient Total USD</th></tr></thead>`;
+                        htmlContent += `<tbody>`;
+
+                        const history = positionData.history;
+                        const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a)); // Neueste zuerst
+
+                        for (const date of sortedDates) {
+                            if (history.hasOwnProperty(date)) {
+                                const dayData = history[date];
+                                if (dayData.daily_earned_fees) { // Prüfe, ob daily_earned_fees existiert
+                                    const earned = dayData.daily_earned_fees;
+                                    const token0Earned = earned.token0_actual !== null ? earned.token0_actual.toFixed(8) : 'N/A';
+                                    const token1Earned = earned.token1_actual !== null ? earned.token1_actual.toFixed(8) : 'N/A';
+                                    const totalUSDEarned = earned.total_usd !== null ? earned.total_usd.toFixed(2) : 'N/A';
+
+                                    htmlContent += `<tr>`;
+                                    htmlContent += `<td>${date}</td>`;
+                                    htmlContent += `<td>${token0Earned}</td>`;
+                                    htmlContent += `<td>${token1Earned}</td>`;
+                                    htmlContent += `<td>$${totalUSDEarned}</td>`;
+                                    htmlContent += `</tr>`;
+                                }
+                            }
+                        }
+                        htmlContent += `</tbody></table>`;
+                        htmlContent += `</div>`;
+                    }
+                }
+                dataContainer.innerHTML = htmlContent || '<p>Keine verarbeitbaren Positionsdaten gefunden.</p>';
+
+            } catch (error) {
+                console.error('Fehler beim Laden oder Verarbeiten der Daten:', error);
+                dataContainer.innerHTML = `<p style="color: red;">Fehler beim Laden der Daten: ${error.message}</p>`;
+            }
+        }
+
+        // Funktion beim Laden der Seite aufrufen
+        window.onload = loadAndDisplayFees;
+    </script>
+</body>
+</html>

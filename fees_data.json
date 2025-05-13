@@ -21,6 +21,32 @@
       "token0_usd_value": 2.29194232,
       "token1_usd_value": 2.2428553022735476,
       "total_usd_value": 4.5347976222735475
-    }
+    },
+    "history": {
+      "2025-05-13": {
+        "token0_symbol": "WBTC",
+        "token1_symbol": "WETH",
+        "total_unclaimed_fees": {
+          "token0_actual": 2.251e-05,
+          "token1_actual": 0.000880130597210391,
+          "token0_usd": 2.33847386,
+          "token1_usd": 2.2962871320398266,
+          "total_usd": 4.634760992039826
+        },
+        "daily_earned_fees": {
+          "token0_actual": 2.251e-05,
+          "token1_actual": 0.000880130597210391,
+          "token0_usd": 2.33847386,
+          "token1_usd": 2.2962871320398266,
+          "total_usd": 4.634760992039826
+        },
+        "raw_data_optional": {
+          "tokens_owed0_raw": 2251,
+          "tokens_owed1_raw": 880130597210391
+        }
+      }
+    },
+    "token_pair_symbols": "WBTC/WETH",
+    "last_updated_utc": "2025-05-13T17:15:46Z"
   }
 }
