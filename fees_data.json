@@ -1,23 +1,23 @@
 {
   "position_4456015": {
     "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-13T20:00:00Z", // Fiktive Zeit der letzten Aktualisierung (gestern)
+    "last_updated_utc": "2025-05-12T20:00:00Z", // Zeit der letzten Aktualisierung (simuliert für gestern Abend)
     "history": {
-      "2025-05-20": { // Repräsentiert "gestern"
-        "token0_symbol": "WBTC",
-        "token1_symbol": "WETH",
+      "2025-05-12": { // Repräsentiert "gestern" (12. Mai 2025)
+        "token0_symbol": "WBTC", // Kann auch aus "token_pair_symbols" abgeleitet werden
+        "token1_symbol": "WETH", // Kann auch aus "token_pair_symbols" abgeleitet werden
         "total_unclaimed_fees": {
           "token0_actual": 5.76e-06,
           "token1_actual": 0.000249908891304729,
-          "token0_usd": 0.5916672,       // USD-Wert zum Zeitpunkt der "gestrigen" Abfrage
-          "token1_usd": 0.620148913772685, // USD-Wert zum Zeitpunkt der "gestrigen" Abfrage
-          "total_usd": 1.2118161137726848 // Der USD-Gesamtwert von "gestern"
+          "token0_usd": 0.5916672,
+          "token1_usd": 0.620148913772685,
+          "total_usd": 1.2118161137726848
         },
-        "daily_earned_fees": { // Für den ersten Eintrag in der History sind "daily" = "total"
+        "daily_earned_fees": { // Da es der "erste" simulierte Eintrag ist, sind daily = total
           "token0_actual": 5.76e-06,
           "token1_actual": 0.000249908891304729,
-          "token0_usd": 0.5916672,       // Bewertet mit "gestrigen" Preisen
-          "token1_usd": 0.620148913772685, // Bewertet mit "gestrigen" Preisen
+          "token0_usd": 0.5916672,
+          "token1_usd": 0.620148913772685,
           "total_usd": 1.2118161137726848
         },
         "raw_data_optional": {
@@ -27,6 +27,4 @@
       }
     }
   }
-  // Hier könnten weitere Positionen mit ihrer jeweiligen History stehen,
-  // aber für den Test reicht diese eine.
 }
