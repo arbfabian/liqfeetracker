@@ -1,7 +1,7 @@
 {
   "position_4456015": {
     "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-14T23:59:59Z",
+    "last_updated_utc": "2025-05-15T19:00:00Z",
     "history": {
       "2025-05-12": {
         "total_unclaimed_fees": {
@@ -49,6 +49,22 @@
           "token0_usd": 1.75,
           "token1_usd": 1.75,
           "total_usd": 3.50
+        }
+      },
+      "2025-05-15": {
+        "total_unclaimed_fees": {
+          "token0_actual": 0.000094166,
+          "token1_actual": 0.001883333,
+          "token0_usd": 5.65,
+          "token1_usd": 5.65,
+          "total_usd": 11.30
+        },
+        "daily_earned_fees": {
+          "token0_actual": 0.000035836,
+          "token1_actual": 0.000716666,
+          "token0_usd": 2.15,
+          "token1_usd": 2.15,
+          "total_usd": 4.30
         }
       }
     }
