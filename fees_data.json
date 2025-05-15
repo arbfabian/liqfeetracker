@@ -1,52 +1,56 @@
 {
   "position_4456015": {
+    "token_pair_symbols": "WBTC/WETH",
+    "last_updated_utc": "2025-05-14T23:59:59Z",
     "history": {
-      "2025-05-13": {
-        "token0_symbol": "WBTC",
-        "token1_symbol": "WETH",
+      "2025-05-12": {
         "total_unclaimed_fees": {
-          "token0_actual": 2.743e-05,
-          "token1_actual": 0.001031778315586515,
-          "token0_usd": 2.83834668,
-          "token1_usd": 2.746666100573394,
-          "total_usd": 5.585012780573393
+          "token0_actual": 0.00001092,
+          "token1_actual": 0.000218333,
+          "token0_usd": 0.655,
+          "token1_usd": 0.655,
+          "total_usd": 1.31
         },
         "daily_earned_fees": {
-          "token0_actual": 2.743e-05,
-          "token1_actual": 0.001031778315586515,
-          "token0_usd": 2.83834668,
-          "token1_usd": 2.746666100573394,
-          "total_usd": 5.585012780573393
+          "token0_actual": 0.00001092,
+          "token1_actual": 0.000218333,
+          "token0_usd": 0.655,
+          "token1_usd": 0.655,
+          "total_usd": 1.31
+        }
+      },
+      "2025-05-13": {
+        "total_unclaimed_fees": {
+          "token0_actual": 0.00002917,
+          "token1_actual": 0.000583333,
+          "token0_usd": 1.75,
+          "token1_usd": 1.75,
+          "total_usd": 3.50
         },
-        "raw_data_optional": {
-          "tokens_owed0_raw": 2743,
-          "tokens_owed1_raw": 1031778315586515
+        "daily_earned_fees": {
+          "token0_actual": 0.00001825,
+          "token1_actual": 0.000365000,
+          "token0_usd": 1.095,
+          "token1_usd": 1.095,
+          "total_usd": 2.19
         }
       },
       "2025-05-14": {
-        "token0_symbol": "WBTC",
-        "token1_symbol": "WETH",
         "total_unclaimed_fees": {
-          "token0_actual": 4.322e-05,
-          "token1_actual": 0.001696916975522985,
-          "token0_usd": 4.431562700000001,
-          "token1_usd": 4.355884061148971,
-          "total_usd": 8.78744676114897
+          "token0_actual": 0.00005833,
+          "token1_actual": 0.001166667,
+          "token0_usd": 3.50,
+          "token1_usd": 3.50,
+          "total_usd": 7.00
         },
         "daily_earned_fees": {
-          "token0_actual": 1.5790000000000003e-05,
-          "token1_actual": 0.0006651386599364701,
-          "token0_usd": 1.6190276500000003,
-          "token1_usd": 1.7073710317373225,
-          "total_usd": 3.326398681737323
-        },
-        "raw_data_optional": {
-          "tokens_owed0_raw": 4322,
-          "tokens_owed1_raw": 1696916975522985
+          "token0_actual": 0.00002916,
+          "token1_actual": 0.000583334,
+          "token0_usd": 1.75,
+          "token1_usd": 1.75,
+          "total_usd": 3.50
         }
       }
-    },
-    "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-14T17:37:35Z"
+    }
   }
 }
