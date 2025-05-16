@@ -1,18 +1,18 @@
 {
   "position_4456015": {
     "token_pair_symbols": "WBTC/WETH",
-    "last_updated_utc": "2025-05-15T19:00:00Z",
+    "last_updated_utc": "2025-05-16T17:34:49Z",
     "history": {
       "2025-05-12": {
         "total_unclaimed_fees": {
-          "token0_actual": 0.00001092,
+          "token0_actual": 1.092e-05,
           "token1_actual": 0.000218333,
           "token0_usd": 0.655,
           "token1_usd": 0.655,
           "total_usd": 1.31
         },
         "daily_earned_fees": {
-          "token0_actual": 0.00001092,
+          "token0_actual": 1.092e-05,
           "token1_actual": 0.000218333,
           "token0_usd": 0.655,
           "token1_usd": 0.655,
@@ -21,15 +21,15 @@
       },
       "2025-05-13": {
         "total_unclaimed_fees": {
-          "token0_actual": 0.00002917,
+          "token0_actual": 2.917e-05,
           "token1_actual": 0.000583333,
           "token0_usd": 1.75,
           "token1_usd": 1.75,
-          "total_usd": 3.50
+          "total_usd": 3.5
         },
         "daily_earned_fees": {
-          "token0_actual": 0.00001825,
-          "token1_actual": 0.000365000,
+          "token0_actual": 1.825e-05,
+          "token1_actual": 0.000365,
           "token0_usd": 1.095,
           "token1_usd": 1.095,
           "total_usd": 2.19
@@ -37,34 +37,50 @@
       },
       "2025-05-14": {
         "total_unclaimed_fees": {
-          "token0_actual": 0.00005833,
+          "token0_actual": 5.833e-05,
           "token1_actual": 0.001166667,
-          "token0_usd": 3.50,
-          "token1_usd": 3.50,
-          "total_usd": 7.00
+          "token0_usd": 3.5,
+          "token1_usd": 3.5,
+          "total_usd": 7.0
         },
         "daily_earned_fees": {
-          "token0_actual": 0.00002916,
+          "token0_actual": 2.916e-05,
           "token1_actual": 0.000583334,
           "token0_usd": 1.75,
           "token1_usd": 1.75,
-          "total_usd": 3.50
+          "total_usd": 3.5
         }
       },
       "2025-05-15": {
         "total_unclaimed_fees": {
-          "token0_actual": 0.000094166,
+          "token0_actual": 9.4166e-05,
           "token1_actual": 0.001883333,
           "token0_usd": 5.65,
           "token1_usd": 5.65,
-          "total_usd": 11.30
+          "total_usd": 11.3
         },
         "daily_earned_fees": {
-          "token0_actual": 0.000035836,
+          "token0_actual": 3.5836e-05,
           "token1_actual": 0.000716666,
           "token0_usd": 2.15,
           "token1_usd": 2.15,
-          "total_usd": 4.30
+          "total_usd": 4.3
+        }
+      },
+      "2025-05-16": {
+        "total_unclaimed_fees": {
+          "token0_actual": 7.03e-05,
+          "token1_actual": 0.002792486074742303,
+          "token0_usd": 7.3170349,
+          "token1_usd": 7.2339631014806836,
+          "total_usd": 14.550998001480684
+        },
+        "daily_earned_fees": {
+          "token0_actual": 0,
+          "token1_actual": 0.0009091530747423028,
+          "token0_usd": 0,
+          "token1_usd": 2.355170131650683,
+          "total_usd": 2.355170131650683
         }
       }
     }
