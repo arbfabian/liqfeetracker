@@ -6,40 +6,61 @@
     <title>Uniswap V3 LP Gebühren Tracker</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 30px;} /* Für den Haupttitel */
+        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 30px;}
         
-        .positions-overview {
+        .positions-overview, .positions-archive {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            justify-content: center;
+            justify-content: center; /* Zentriert die Karten, wenn nicht volle Breite */
             margin-bottom: 30px;
+        }
+
+        .positions-archive h2.archive-title { /* Titel für Archiv Sektion */
+            width: 100%;
+            text-align: center;
+            font-size: 1.5em;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 10px;
         }
 
         .position-summary-card {
             border: 1px solid #ccc;
-            padding: 20px;
+            padding: 15px 20px; /* Etwas weniger Padding oben/unten */
             border-radius: 8px;
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 300px; /* Oder eine responsive Breite z.B. calc(33.333% - 20px) */
-            text-align: left; /* Inhalte linksbündig in der Karte */
+            width: 320px; /* Feste Breite für Konsistenz */
+            text-align: left;
+            display: flex;
+            flex-direction: column; /* Inhalte untereinander */
         }
 
         .position-summary-card h2 {
             margin-top: 0;
-            font-size: 1.2em; /* Etwas kleiner für die Karte */
+            font-size: 1.15em; /* Angepasste Größe */
             color: #34495e;
             border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
         }
          .position-summary-card p {
-            margin: 8px 0;
-            font-size: 0.95em;
+            margin: 6px 0; /* Weniger Abstand */
+            font-size: 0.9em; /* Etwas kleiner */
+            line-height: 1.4;
+        }
+        .position-summary-card p strong {
+            color: #555;
+        }
+        .position-summary-card p small {
+            font-size: 0.8em;
+            color: #777;
         }
 
-        .details-button, .back-button { /* .back-button hinzugefügt */
+
+        .details-button, .back-button {
             background-color: #3498db;
             color: white;
             border: none;
@@ -47,15 +68,28 @@
             text-align: center;
             text-decoration: none;
             display: inline-block;
-            font-size: 14px;
+            font-size: 0.9em; /* Angepasst */
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 15px;
+            margin-top: auto; /* Drückt den Button nach unten, wenn Karte flex-column ist */
+            align-self: flex-start; /* Damit der Button nicht die volle Breite einnimmt */
         }
 
-        .details-button:hover, .back-button:hover { /* .back-button hinzugefügt */
+        .details-button:hover, .back-button:hover {
             background-color: #2980b9;
         }
+
+        .archived-position {
+            opacity: 0.65;
+            border-left: 5px solid #95a5a6; /* Dunkleres Grau */
+        }
+        .active-position {
+            border-left: 5px solid #27ae60; /* Helleres Grün */
+        }
+        .active-position h2 {
+             color: #27ae60; /* Aktive Positionen Titel hervorheben */
+        }
+
 
         /* Stile für die Detailansicht (deine existierenden sind gut) */
         .position-block { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
@@ -87,15 +121,35 @@
                 }
                 const allData = await response.json();
 
-                if (Object.keys(allData).length === 0) {
+                if (Object.keys(allData).filter(key => key.startsWith("position_")).length === 0) {
                     dataContainer.innerHTML = '<p class="loading-message">Keine Positionsdaten gefunden.</p>';
                     return;
                 }
 
                 let overviewHtml = '<div class="positions-overview">';
+                let archiveHtml = '<div class="positions-archive"><h2 class="archive-title">Archivierte Positionen</h2>';
+                let hasActivePositions = false;
+                let hasArchivedPositions = false;
 
-                for (const positionIdKey in allData) {
-                    if (allData.hasOwnProperty(positionIdKey) && positionIdKey.startsWith('position_')) {
+
+                // Sortiere Positionen, um aktive oben anzuzeigen (optional, aber nett)
+                const sortedPositionKeys = Object.keys(allData)
+                    .filter(key => key.startsWith("position_"))
+                    .sort((a, b) => {
+                        const aIsActive = allData[a].is_active === true;
+                        const bIsActive = allData[b].is_active === true;
+                        if (aIsActive && !bIsActive) return -1;
+                        if (!aIsActive && bIsActive) return 1;
+                        // Optional: Weitere Sortierung, z.B. nach ID oder letztem Update
+                        const dateA = allData[a].last_updated_utc ? new Date(allData[a].last_updated_utc) : 0;
+                        const dateB = allData[b].last_updated_utc ? new Date(allData[b].last_updated_utc) : 0;
+                        return dateB - dateA; // Neueste zuerst (innerhalb aktiv/archiviert)
+                    });
+
+
+                for (const positionIdKey of sortedPositionKeys) {
+                // for (const positionIdKey in allData) { // Alte Iteration
+                    // if (allData.hasOwnProperty(positionIdKey) && positionIdKey.startsWith('position_')) { // Alte Prüfung
                         const positionData = allData[positionIdKey];
                         const positionNumber = positionIdKey.replace('position_', '');
 
@@ -115,28 +169,71 @@
                         if (positionData.initial_investment_usd && parseFloat(positionData.initial_investment_usd) > 0) {
                             const profitPercentage = (totalProfitUsd / parseFloat(positionData.initial_investment_usd)) * 100;
                             profitPercentageText = `<span style="color: ${profitPercentage >= 0 ? 'green' : 'red'};">${profitPercentage.toFixed(2)}%</span>`;
-                        } else if (positionData.hasOwnProperty('initial_investment_usd')) { // Existiert, ist aber 0 oder ungültig
-                             profitPercentageText = 'Initialinv. ungültig';
+                        } else if (positionData.hasOwnProperty('initial_investment_usd')) {
+                             profitPercentageText = 'Initialinv. fehlt/ungültig';
+                        }
+                        
+                        let daysOpenText = 'N/A';
+                        if (positionData.history && typeof positionData.history === 'object' && Object.keys(positionData.history).length > 0) {
+                            const historyDates = Object.keys(positionData.history).sort((a, b) => new Date(a) - new Date(b));
+                            const firstEntryDate = new Date(historyDates[0]);
+                            const lastHistoryDateStr = historyDates[historyDates.length -1];
+                            
+                            // Verwende das letzte Datum in der History für die Berechnung, wenn die Position inaktiv ist
+                            const endDate = positionData.is_active === true ? new Date() : new Date(lastHistoryDateStr);
+                            
+                            endDate.setHours(0,0,0,0); // Normalisiere auf Mitternacht für Tagesvergleich
+                            firstEntryDate.setHours(0,0,0,0); // Normalisiere auf Mitternacht
+
+                            const diffTime = Math.abs(endDate.getTime() - firstEntryDate.getTime());
+                            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                            if (Object.keys(positionData.history).length === 0) diffDays = 0; // Falls keine History
+                            
+                            daysOpenText = `${diffDays} Tag(e)`;
                         }
 
 
-                        overviewHtml += `
-                            <div class="position-summary-card" data-position-id="${positionIdKey}">
-                                <h2>Position ${positionNumber}</h2>
+                        const isActive = positionData.is_active === true;
+
+                        let cardHtml = `
+                            <div class="position-summary-card ${isActive ? 'active-position' : 'archived-position'}" data-position-id="${positionIdKey}">
+                                <h2>Position ${positionNumber} ${isActive ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>
                                 <p><strong>Paar:</strong> ${positionData.token_pair_symbols || 'N/A'}</p>
                                 <p><strong>Gesamtprofit:</strong> <span style="color: ${totalProfitUsd >= 0 ? 'green' : 'red'}; font-weight: bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
                                 <p><strong>Profit %:</strong> ${profitPercentageText}</p>
+                                <p><strong>${isActive ? 'Offen seit' : 'Laufzeit'}:</strong> ${daysOpenText}</p>
                                 <p><small>Initial: ${positionData.initial_investment_usd ? parseFloat(positionData.initial_investment_usd).toFixed(2) + ' USD' : 'N/A'}</small></p>
-                                <p><small>Letztes Update: ${positionData.last_updated_utc ? new Date(positionData.last_updated_utc).toLocaleString('de-DE') : 'N/A'}</small></p>
+                                <p><small>Letztes Update: ${positionData.last_updated_utc ? new Date(positionData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>
                                 <button class="details-button">Details anzeigen</button>
                             </div>
                         `;
-                    }
-                }
-                overviewHtml += '</div>';
-                overviewHtml += '<div id="details-section-container" style="display:none;"></div>'; // Umbenannt für Klarheit
 
-                dataContainer.innerHTML = overviewHtml;
+                        if (isActive) {
+                            overviewHtml += cardHtml;
+                            hasActivePositions = true;
+                        } else {
+                            archiveHtml += cardHtml;
+                            hasArchivedPositions = true;
+                        }
+                    // } // Ende der alten if-Bedingung
+                } // Ende der for...of Schleife
+                overviewHtml += '</div>'; // Ende .positions-overview
+                archiveHtml += '</div>';  // Ende .positions-archive
+
+                let finalHtml = '';
+                if (hasActivePositions) {
+                    finalHtml += overviewHtml;
+                } else {
+                     finalHtml += '<p class="loading-message">Keine aktiven Positionen gefunden.</p>';
+                }
+
+                if (hasArchivedPositions) {
+                    finalHtml += archiveHtml;
+                }
+                
+                finalHtml += '<div id="details-section-container" style="display:none;"></div>';
+                dataContainer.innerHTML = finalHtml;
+
 
                 document.querySelectorAll('.details-button').forEach(button => {
                     button.addEventListener('click', function() {
@@ -153,11 +250,12 @@
 
         function showPositionDetails(positionData, positionIdKey) {
             const overviewSection = document.querySelector('.positions-overview');
+            const archiveSection = document.querySelector('.positions-archive'); // Archiv auch ausblenden
             const detailsContainer = document.getElementById('details-section-container');
             const positionNumber = positionIdKey.replace('position_', '');
 
             let detailHtml = `<div class="position-block">`;
-            detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'})</h2>`;
+            detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
             
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
@@ -186,6 +284,7 @@
             detailHtml += `</div>`;
 
             if (overviewSection) overviewSection.style.display = 'none';
+            if (archiveSection) archiveSection.style.display = 'none'; // Archiv auch ausblenden
             detailsContainer.innerHTML = detailHtml;
             detailsContainer.style.display = 'block';
             
@@ -195,10 +294,14 @@
 
         function hidePositionDetails() {
             const overviewSection = document.querySelector('.positions-overview');
+            const archiveSection = document.querySelector('.positions-archive');
             const detailsContainer = document.getElementById('details-section-container');
             
             if (detailsContainer) detailsContainer.style.display = 'none';
-            if (overviewSection) overviewSection.style.display = 'flex'; // Oder 'block', je nachdem wie es gestyled war
+            if (overviewSection) overviewSection.style.display = 'flex'; // Oder 'block'
+            if (archiveSection && document.querySelector('.archived-position')) { // Zeige Archiv nur, wenn es Inhalt hat
+                 archiveSection.style.display = 'flex'; // Oder 'block'
+            }
         }
 
         window.onload = loadAndDisplayFees;

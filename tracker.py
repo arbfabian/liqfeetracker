@@ -10,10 +10,10 @@ load_dotenv()
 # --- Konfiguration ---
 ARBITRUM_RPC_URL = os.getenv('ARBITRUM_RPC')
 WALLET_ADDRESS = os.getenv('WALLET_ADDRESS')
-CONFIG_FILE_POSITIONS = "positions_to_track.txt" # Hier stehen jetzt ID und Investment
+CONFIG_FILE_POSITIONS = "positions_to_track.txt"
 JSON_DATA_FILE = "fees_data.json"
 
-# --- Konstanten ---
+# ... (Restliche Konstanten NFPM_ADDRESS, ABI etc. bleiben gleich) ...
 NFPM_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88"
 NFPM_ABI = json.loads("""
 [
@@ -68,7 +68,7 @@ ERC20_ABI_MINIMAL = json.loads("""
 ]
 """)
 
-# --- JSON Daten laden ---
+
 def load_json_data(filename=JSON_DATA_FILE):
     if os.path.exists(filename):
         try:
@@ -79,7 +79,6 @@ def load_json_data(filename=JSON_DATA_FILE):
             return {}
     return {}
 
-# --- JSON Daten speichern ---
 def save_json_data(data, filename=JSON_DATA_FILE):
     try:
         with open(filename, 'w') as f:
@@ -88,8 +87,6 @@ def save_json_data(data, filename=JSON_DATA_FILE):
     except Exception as e:
         print(f"Error saving data to {filename}: {e}")
 
-
-# --- Funktion zum Holen von Preisen ---
 def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one"):
     try:
         checksum_address = Web3.to_checksum_address(contract_address)
@@ -104,15 +101,14 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
     except Exception as e_gen: print(f"    Error fetching price for {contract_address}: {e_gen}")
     return None
 
-# --- Funktion zum Lesen der Positions-IDs und Investments aus der Konfigurationsdatei ---
 def get_positions_config(filename=CONFIG_FILE_POSITIONS):
-    positions_config_data = [] # Liste von Dictionaries: [{'id': 123, 'investment': 5000.0}, ...]
+    positions_config_data = []
     try:
         if os.path.exists(filename):
             with open(filename, 'r') as f:
                 for line_number, line in enumerate(f, 1):
                     line = line.strip()
-                    if not line or line.startswith('#'): # Ignoriere leere Zeilen und Kommentare
+                    if not line or line.startswith('#'):
                         continue
                     parts = line.split(',')
                     if len(parts) == 2:
@@ -131,11 +127,9 @@ def get_positions_config(filename=CONFIG_FILE_POSITIONS):
         print(f"Fehler beim Lesen der Konfigurationsdatei '{filename}': {e}")
     return positions_config_data
 
-# --- Hauptlogik ---
 def main():
     print(f"--- Starting Uniswap V3 Fee Tracker ---")
-    
-    all_data = load_json_data() 
+    all_data = load_json_data()
 
     if not ARBITRUM_RPC_URL or not WALLET_ADDRESS:
         print("Error: Missing environment variables (ARBITRUM_RPC, WALLET_ADDRESS)")
@@ -149,39 +143,52 @@ def main():
 
     nfpm_contract = w3.eth.contract(address=NFPM_ADDRESS, abi=NFPM_ABI)
     
-    positions_to_track_config = get_positions_config() # Holt IDs und Investments
-    if not positions_to_track_config:
-        print("Keine gültigen Positionskonfigurationen gefunden. Beende.")
+    # Lade die aktuell zu trackenden Positionen aus der Konfig-Datei
+    active_positions_config = get_positions_config()
+    if not active_positions_config:
+        print("Keine aktiven Positionen in der Konfigurationsdatei gefunden. Es werden keine Gebühren aktualisiert.")
+        # Optional: Hier könntest du Logik hinzufügen, um alle Positionen in all_data als "inaktiv" zu markieren,
+        # falls das für die Webseiten-Darstellung gewünscht ist.
+        # Aber das Speichern von all_data am Ende sorgt dafür, dass alte Daten erhalten bleiben.
+        save_json_data(all_data) # Speichere, falls z.B. nur initial_investment_usd für eine neue Position gesetzt wurde
         return
 
     today_utc = datetime.now(timezone.utc)
     today_date_str = today_utc.strftime('%Y-%m-%d')
     yesterday_date_str = (today_utc - timedelta(days=1)).strftime('%Y-%m-%d')
-    
-    for pos_config_item in positions_to_track_config:
+
+    # Erstelle eine Liste der IDs der aktiven Positionen für schnellen Zugriff
+    active_position_ids = [p['id'] for p in active_positions_config]
+
+    # Markiere alle Positionen in all_data (aus fees_data.json) als potenziell inaktiv
+    for pos_key in all_data.keys():
+        if pos_key.startswith("position_"): # Stelle sicher, dass es ein Positionsschlüssel ist
+             all_data[pos_key]["is_active"] = False # Standardmäßig als inaktiv setzen
+
+    # Verarbeite nur die Positionen, die in active_positions_config definiert sind
+    for pos_config_item in active_positions_config:
         position_nft_id = pos_config_item['id']
         initial_investment_from_config = pos_config_item['initial_investment_usd']
         position_key = f"position_{position_nft_id}"
-        
+
         # Initialen Positions-Eintrag in all_data erstellen, falls nicht vorhanden
         if position_key not in all_data:
-            all_data[position_key] = {"history": {}}
-        elif "history" not in all_data[position_key]: # Für Altdaten-Kompatibilität
+            all_data[position_key] = {"history": {}, "is_active": True} # Direkt als aktiv markieren
+            print(f"  Neue Position {position_key} wird initialisiert.")
+        elif "history" not in all_data[position_key]:
              all_data[position_key]["history"] = {}
+             all_data[position_key]["is_active"] = True # Aktiv markieren
 
-        # Initialinvestment nur setzen, wenn es in fees_data.json für diese Position noch nicht existiert
+        all_data[position_key]["is_active"] = True # Als aktiv markieren für diesen Lauf
+
         if "initial_investment_usd" not in all_data[position_key]:
             all_data[position_key]["initial_investment_usd"] = initial_investment_from_config
             print(f"  Initialinvestment für {position_key} ({initial_investment_from_config} USD) aus {CONFIG_FILE_POSITIONS} in JSON gespeichert.")
-        # Optional: Eine Warnung ausgeben, wenn der Wert in der TXT-Datei von einem bereits gespeicherten Wert abweicht,
-        # aber nicht überschreiben, wenn die obige Logik "nur setzen, wenn nicht vorhanden" gilt.
-        # elif all_data[position_key]["initial_investment_usd"] != initial_investment_from_config:
-        #     print(f"  Hinweis: Initialinvestment für {position_key} in {CONFIG_FILE_POSITIONS} ({initial_investment_from_config} USD) "
-        #           f"weicht vom gespeicherten Wert ({all_data[position_key]['initial_investment_usd']} USD) in JSON ab. Der gespeicherte Wert wird beibehalten.")
 
-
-        print(f"\n--- Processing Position ID: {position_nft_id} for {today_date_str} ---")
+        print(f"\n--- Processing ACTIVE Position ID: {position_nft_id} for {today_date_str} ---")
         try:
+            # ... (Rest der Gebührenabruf- und Berechnungslogik bleibt EXAKT GLEICH wie zuvor) ...
+            # Nur ein Beispielausschnitt, der Rest ist identisch:
             position_details = nfpm_contract.functions.positions(position_nft_id).call()
             token0_address_checksum = Web3.to_checksum_address(position_details[2])
             token1_address_checksum = Web3.to_checksum_address(position_details[3])
@@ -297,7 +304,7 @@ def main():
             }
             
             all_data[position_key]["history"][today_date_str] = today_data_entry
-            all_data[position_key]["last_updated_utc"] = today_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+            all_data[position_key]["last_updated_utc"] = today_utc.strftime('%Y-%m-%dT%H:%M:%SZ') # Wichtig für "is_active" Logik unten
 
             print(f"\n  --- Fees Earned on {today_date_str} for Position {position_nft_id} ---")
             print(f"    {current_token0_symbol}: {daily_earned_token0_actual:.8f} "
@@ -306,12 +313,18 @@ def main():
                   f"(${(daily_earned_token1_usd_val or 0.0):.2f})")
             if daily_total_earned_usd_val is not None:
                 print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
-        
+
         except Exception as e_inner:
             print(f"An error occurred processing position ID {position_nft_id}: {e_inner}")
             import traceback
             traceback.print_exc()
-        
+
+    # Überprüfe, ob eine Position, die vorher aktiv war, jetzt nicht mehr in der config ist.
+    # Eine robustere Methode für "is_active" wäre, das last_updated_utc zu prüfen.
+    # Wenn eine Position in `all_data` nicht heute aktualisiert wurde UND nicht in `active_position_ids` ist,
+    # könnte sie als "geschlossen" betrachtet werden. Die obige `all_data[pos_key]["is_active"] = False`
+    # und dann `all_data[position_key]["is_active"] = True` Logik macht das schon.
+            
     save_json_data(all_data)
     print(f"\n--- Fee Tracker Finished All Positions ---")
 
