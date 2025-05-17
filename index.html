@@ -12,11 +12,11 @@
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            justify-content: center; /* Zentriert die Karten, wenn nicht volle Breite */
+            justify-content: center;
             margin-bottom: 30px;
         }
 
-        .positions-archive h2.archive-title { /* Titel für Archiv Sektion */
+        .positions-archive h2.archive-title {
             width: 100%;
             text-align: center;
             font-size: 1.5em;
@@ -24,41 +24,51 @@
             margin-bottom: 15px;
             border-bottom: 1px solid #bdc3c7;
             padding-bottom: 10px;
+            /* Für Fade-In */
+            opacity: 0;
+            animation: fadeIn 0.5s 0.2s ease-out forwards; /* Kleiner Delay für Titel */
         }
 
         .position-summary-card {
             border: 1px solid #ccc;
-            padding: 15px 20px; /* Etwas weniger Padding oben/unten */
+            padding: 15px 20px;
             border-radius: 8px;
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 320px; /* Feste Breite für Konsistenz */
+            width: 320px;
             text-align: left;
             display: flex;
-            flex-direction: column; /* Inhalte untereinander */
+            flex-direction: column;
+            /* Für Hover-Effekt und Fade-In */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            opacity: 0; /* Start für Fade-In */
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        /* Staggering für Fade-In der Karten */
+        .positions-overview .position-summary-card:nth-child(1), .positions-archive .position-summary-card:nth-child(1) { animation-delay: 0.3s; }
+        .positions-overview .position-summary-card:nth-child(2), .positions-archive .position-summary-card:nth-child(2) { animation-delay: 0.45s; }
+        .positions-overview .position-summary-card:nth-child(3), .positions-archive .position-summary-card:nth-child(3) { animation-delay: 0.6s; }
+        .positions-overview .position-summary-card:nth-child(4), .positions-archive .position-summary-card:nth-child(4) { animation-delay: 0.75s; }
+        /* Bei Bedarf weitere hinzufügen oder per JS dynamisch setzen */
+
+
+        .position-summary-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
         .position-summary-card h2 {
             margin-top: 0;
-            font-size: 1.15em; /* Angepasste Größe */
+            font-size: 1.15em;
             color: #34495e;
             border-bottom: 1px solid #eee;
             padding-bottom: 8px;
             margin-bottom: 12px;
         }
-         .position-summary-card p {
-            margin: 6px 0; /* Weniger Abstand */
-            font-size: 0.9em; /* Etwas kleiner */
-            line-height: 1.4;
-        }
-        .position-summary-card p strong {
-            color: #555;
-        }
-        .position-summary-card p small {
-            font-size: 0.8em;
-            color: #777;
-        }
-
+        .position-summary-card p { margin: 6px 0; font-size: 0.9em; line-height: 1.4; }
+        .position-summary-card p strong { color: #555; }
+        .position-summary-card p small { font-size: 0.8em; color: #777; }
 
         .details-button, .back-button {
             background-color: #3498db;
@@ -68,38 +78,58 @@
             text-align: center;
             text-decoration: none;
             display: inline-block;
-            font-size: 0.9em; /* Angepasst */
+            font-size: 0.9em;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: auto; /* Drückt den Button nach unten, wenn Karte flex-column ist */
-            align-self: flex-start; /* Damit der Button nicht die volle Breite einnimmt */
+            margin-top: auto;
+            align-self: flex-start;
+            transition: background-color 0.2s ease-in-out; /* Button Hover-Effekt */
         }
+        .details-button:hover, .back-button:hover { background-color: #2980b9; }
 
-        .details-button:hover, .back-button:hover {
-            background-color: #2980b9;
-        }
+        .archived-position { opacity: 0.65; border-left: 5px solid #95a5a6; }
+        .active-position { border-left: 5px solid #27ae60; }
+        .active-position h2 { color: #27ae60; }
 
-        .archived-position {
-            opacity: 0.65;
-            border-left: 5px solid #95a5a6; /* Dunkleres Grau */
+        /* Stile für die Detailansicht */
+        .position-block {
+            border: 1px solid #ccc; padding: 20px; margin-bottom: 25px;
+            border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            /* Für Fade-In der Detailansicht */
+            opacity: 0;
+            animation: fadeInDetail 0.4s ease-out forwards;
         }
-        .active-position {
-            border-left: 5px solid #27ae60; /* Helleres Grün */
-        }
-        .active-position h2 {
-             color: #27ae60; /* Aktive Positionen Titel hervorheben */
-        }
-
-
-        /* Stile für die Detailansicht (deine existierenden sind gut) */
-        .position-block { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background-color: #e8eff5; color: #2c3e50; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
+        
         #data-container p.error-message { color: red; font-weight: bold; text-align:center; }
         #data-container p.loading-message { text-align: center; font-size: 1.1em; }
+
+        /* Für sanften Übergang der Sektionen */
+        .section-container {
+            transition: opacity 0.4s ease-in-out, max-height 0.4s ease-in-out; /* max-height für Slide-Effekt */
+            overflow: hidden; /* Wichtig für max-height Transition */
+        }
+        .section-hidden {
+            opacity: 0;
+            max-height: 0px !important; /* Wichtig !important, um initiale Höhe zu überschreiben */
+            /* visibility: hidden; /* Kann zu Sprüngen führen, max-height ist oft besser */
+            pointer-events: none; /* Verhindert Interaktion mit versteckten Elementen */
+        }
+
+
+        /* Keyframes für Fade-In */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDetail { /* Eigene Animation für Detail, falls abweichend gewünscht */
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
 
     </style>
 </head>
@@ -110,6 +140,11 @@
     </div>
 
     <script>
+        // Globale Referenzen für die Sektionen
+        let overviewSectionGlobalRef;
+        let archiveSectionGlobalRef;
+        let detailsContainerGlobalRef;
+
         async function loadAndDisplayFees() {
             const dataContainer = document.getElementById('data-container');
             dataContainer.innerHTML = '<p class="loading-message">Lade Gebührendaten...</p>';
@@ -126,13 +161,11 @@
                     return;
                 }
 
-                let overviewHtml = '<div class="positions-overview">';
-                let archiveHtml = '<div class="positions-archive"><h2 class="archive-title">Archivierte Positionen</h2>';
+                let overviewHtml = '<div class="positions-overview section-container">'; // Klasse für Transition hinzugefügt
+                let archiveHtml = '<div class="positions-archive section-container"><h2 class="archive-title">Archivierte Positionen</h2>';
                 let hasActivePositions = false;
                 let hasArchivedPositions = false;
 
-
-                // Sortiere Positionen, um aktive oben anzuzeigen (optional, aber nett)
                 const sortedPositionKeys = Object.keys(allData)
                     .filter(key => key.startsWith("position_"))
                     .sort((a, b) => {
@@ -140,99 +173,102 @@
                         const bIsActive = allData[b].is_active === true;
                         if (aIsActive && !bIsActive) return -1;
                         if (!aIsActive && bIsActive) return 1;
-                        // Optional: Weitere Sortierung, z.B. nach ID oder letztem Update
                         const dateA = allData[a].last_updated_utc ? new Date(allData[a].last_updated_utc) : 0;
                         const dateB = allData[b].last_updated_utc ? new Date(allData[b].last_updated_utc) : 0;
-                        return dateB - dateA; // Neueste zuerst (innerhalb aktiv/archiviert)
+                        return dateB - dateA;
                     });
 
-
                 for (const positionIdKey of sortedPositionKeys) {
-                // for (const positionIdKey in allData) { // Alte Iteration
-                    // if (allData.hasOwnProperty(positionIdKey) && positionIdKey.startsWith('position_')) { // Alte Prüfung
-                        const positionData = allData[positionIdKey];
-                        const positionNumber = positionIdKey.replace('position_', '');
+                    const positionData = allData[positionIdKey];
+                    const positionNumber = positionIdKey.replace('position_', '');
 
-                        let totalProfitUsd = 0;
-                        if (positionData.history && typeof positionData.history === 'object') {
-                            for (const date in positionData.history) {
-                                if (positionData.history.hasOwnProperty(date) &&
-                                    positionData.history[date].daily_earned_fees &&
-                                    positionData.history[date].daily_earned_fees.total_usd !== null &&
-                                    positionData.history[date].daily_earned_fees.total_usd !== undefined) {
-                                    totalProfitUsd += parseFloat(positionData.history[date].daily_earned_fees.total_usd);
-                                }
+                    let totalProfitUsd = 0;
+                    if (positionData.history && typeof positionData.history === 'object') {
+                        for (const date in positionData.history) {
+                            if (positionData.history.hasOwnProperty(date) &&
+                                positionData.history[date].daily_earned_fees &&
+                                positionData.history[date].daily_earned_fees.total_usd !== null &&
+                                positionData.history[date].daily_earned_fees.total_usd !== undefined) {
+                                totalProfitUsd += parseFloat(positionData.history[date].daily_earned_fees.total_usd);
                             }
                         }
+                    }
 
-                        let profitPercentageText = 'N/A';
-                        if (positionData.initial_investment_usd && parseFloat(positionData.initial_investment_usd) > 0) {
-                            const profitPercentage = (totalProfitUsd / parseFloat(positionData.initial_investment_usd)) * 100;
-                            profitPercentageText = `<span style="color: ${profitPercentage >= 0 ? 'green' : 'red'};">${profitPercentage.toFixed(2)}%</span>`;
-                        } else if (positionData.hasOwnProperty('initial_investment_usd')) {
-                             profitPercentageText = 'Initialinv. fehlt/ungültig';
-                        }
+                    let profitPercentageText = 'N/A';
+                    if (positionData.initial_investment_usd && parseFloat(positionData.initial_investment_usd) > 0) {
+                        const profitPercentage = (totalProfitUsd / parseFloat(positionData.initial_investment_usd)) * 100;
+                        profitPercentageText = `<span style="color: ${profitPercentage >= 0 ? 'green' : 'red'};">${profitPercentage.toFixed(2)}%</span>`;
+                    } else if (positionData.hasOwnProperty('initial_investment_usd')) {
+                         profitPercentageText = 'Initialinv. fehlt/ungültig';
+                    }
+                    
+                    let daysOpenText = 'N/A';
+                    if (positionData.history && typeof positionData.history === 'object' && Object.keys(positionData.history).length > 0) {
+                        const historyDates = Object.keys(positionData.history).sort((a, b) => new Date(a) - new Date(b));
+                        const firstEntryDate = new Date(historyDates[0]);
+                        const lastHistoryDateStr = historyDates[historyDates.length -1];
+                        const endDate = positionData.is_active === true ? new Date() : new Date(lastHistoryDateStr);
                         
-                        let daysOpenText = 'N/A';
-                        if (positionData.history && typeof positionData.history === 'object' && Object.keys(positionData.history).length > 0) {
-                            const historyDates = Object.keys(positionData.history).sort((a, b) => new Date(a) - new Date(b));
-                            const firstEntryDate = new Date(historyDates[0]);
-                            const lastHistoryDateStr = historyDates[historyDates.length -1];
-                            
-                            // Verwende das letzte Datum in der History für die Berechnung, wenn die Position inaktiv ist
-                            const endDate = positionData.is_active === true ? new Date() : new Date(lastHistoryDateStr);
-                            
-                            endDate.setHours(0,0,0,0); // Normalisiere auf Mitternacht für Tagesvergleich
-                            firstEntryDate.setHours(0,0,0,0); // Normalisiere auf Mitternacht
+                        endDate.setHours(0,0,0,0);
+                        firstEntryDate.setHours(0,0,0,0);
 
-                            const diffTime = Math.abs(endDate.getTime() - firstEntryDate.getTime());
-                            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                            if (Object.keys(positionData.history).length === 0) diffDays = 0; // Falls keine History
-                            
-                            daysOpenText = `${diffDays} Tagen`;
-                        }
+                        const diffTime = Math.abs(endDate.getTime() - firstEntryDate.getTime());
+                        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                        if (Object.keys(positionData.history).length === 0) diffDays = 0;
+                        daysOpenText = `${diffDays} Tag(e)`;
+                    }
 
+                    const isActive = positionData.is_active === true;
+                    let cardHtml = `
+                        <div class="position-summary-card ${isActive ? 'active-position' : 'archived-position'}" data-position-id="${positionIdKey}">
+                            <h2>Position ${positionNumber} ${isActive ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>
+                            <p><strong>Paar:</strong> ${positionData.token_pair_symbols || 'N/A'}</p>
+                            <p><strong>Gesamtprofit:</strong> <span style="color: ${totalProfitUsd >= 0 ? 'green' : 'red'}; font-weight: bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
+                            <p><strong>Profit %:</strong> ${profitPercentageText}</p>
+                            <p><strong>${isActive ? 'Offen seit' : 'Laufzeit'}:</strong> ${daysOpenText}</p>
+                            <p><small>Initial: ${positionData.initial_investment_usd ? parseFloat(positionData.initial_investment_usd).toFixed(2) + ' USD' : 'N/A'}</small></p>
+                            <p><small>Letztes Update: ${positionData.last_updated_utc ? new Date(positionData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>
+                            <button class="details-button">Details anzeigen</button>
+                        </div>
+                    `;
 
-                        const isActive = positionData.is_active === true;
-
-                        let cardHtml = `
-                            <div class="position-summary-card ${isActive ? 'active-position' : 'archived-position'}" data-position-id="${positionIdKey}">
-                                <h2>Position ${positionNumber} ${isActive ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>
-                                <p><strong>Paar:</strong> ${positionData.token_pair_symbols || 'N/A'}</p>
-                                <p><strong>Gesamtprofit:</strong> <span style="color: ${totalProfitUsd >= 0 ? 'green' : 'red'}; font-weight: bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
-                                <p><strong>Profit %:</strong> ${profitPercentageText}</p>
-                                <p><strong>${isActive ? 'Offen seit' : 'Laufzeit'}:</strong> ${daysOpenText}</p>
-                                <p><small>Initial: ${positionData.initial_investment_usd ? parseFloat(positionData.initial_investment_usd).toFixed(2) + ' USD' : 'N/A'}</small></p>
-                                <p><small>Letztes Update: ${positionData.last_updated_utc ? new Date(positionData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>
-                                <button class="details-button">Details anzeigen</button>
-                            </div>
-                        `;
-
-                        if (isActive) {
-                            overviewHtml += cardHtml;
-                            hasActivePositions = true;
-                        } else {
-                            archiveHtml += cardHtml;
-                            hasArchivedPositions = true;
-                        }
-                    // } // Ende der alten if-Bedingung
-                } // Ende der for...of Schleife
-                overviewHtml += '</div>'; // Ende .positions-overview
-                archiveHtml += '</div>';  // Ende .positions-archive
+                    if (isActive) {
+                        overviewHtml += cardHtml;
+                        hasActivePositions = true;
+                    } else {
+                        archiveHtml += cardHtml;
+                        hasArchivedPositions = true;
+                    }
+                }
+                overviewHtml += '</div>';
+                archiveHtml += '</div>';
 
                 let finalHtml = '';
                 if (hasActivePositions) {
                     finalHtml += overviewHtml;
                 } else {
-                     finalHtml += '<p class="loading-message">Keine aktiven Positionen gefunden.</p>';
+                     finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen gefunden.</p></div>';
                 }
 
                 if (hasArchivedPositions) {
                     finalHtml += archiveHtml;
                 }
                 
-                finalHtml += '<div id="details-section-container" style="display:none;"></div>';
+                // Wichtig: Details-Container außerhalb der if/else Blöcke hinzufügen, aber initial versteckt
+                finalHtml += '<div id="details-section-container" class="section-container section-hidden"></div>';
                 dataContainer.innerHTML = finalHtml;
+
+                // Referenzen für späteres Ein-/Ausblenden setzen
+                overviewSectionGlobalRef = document.querySelector('.positions-overview');
+                archiveSectionGlobalRef = document.querySelector('.positions-archive');
+                detailsContainerGlobalRef = document.getElementById('details-section-container');
+                
+                // Set initial max-height for smooth transition (after elements are in DOM)
+                // We need to calculate the actual height or use a sufficiently large value if we don't hide it initially.
+                // For now, we start with overview/archive visible and details hidden.
+                if(overviewSectionGlobalRef) overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px";
+                if(archiveSectionGlobalRef && hasArchivedPositions) archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px";
+                if(detailsContainerGlobalRef) detailsContainerGlobalRef.style.maxHeight = "0px"; // Start hidden
 
 
                 document.querySelectorAll('.details-button').forEach(button => {
@@ -249,20 +285,15 @@
         }
 
         function showPositionDetails(positionData, positionIdKey) {
-            const overviewSection = document.querySelector('.positions-overview');
-            const archiveSection = document.querySelector('.positions-archive'); // Archiv auch ausblenden
-            const detailsContainer = document.getElementById('details-section-container');
             const positionNumber = positionIdKey.replace('position_', '');
-
-            let detailHtml = `<div class="position-block">`;
+            let detailHtml = `<div class="position-block">`; // position-block hat eigene FadeInDetail Animation
             detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
-            
+            // ... (Rest der Detail HTML Erstellung wie gehabt) ...
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
             const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
 
             detailHtml += `<table><thead><tr><th>Datum</th><th>Verdient ${token0DisplaySymbol}</th><th>Verdient ${token1DisplaySymbol}</th><th>Verdient Total USD</th></tr></thead><tbody>`;
-
             const history = positionData.history;
             if (history && typeof history === 'object' && Object.keys(history).length > 0) {
                 const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a));
@@ -283,24 +314,36 @@
             detailHtml += `<button class="back-button">Zurück zur Übersicht</button>`;
             detailHtml += `</div>`;
 
-            if (overviewSection) overviewSection.style.display = 'none';
-            if (archiveSection) archiveSection.style.display = 'none'; // Archiv auch ausblenden
-            detailsContainer.innerHTML = detailHtml;
-            detailsContainer.style.display = 'block';
+
+            if (overviewSectionGlobalRef) {
+                overviewSectionGlobalRef.classList.add('section-hidden');
+                overviewSectionGlobalRef.style.maxHeight = "0px";
+            }
+            if (archiveSectionGlobalRef) {
+                archiveSectionGlobalRef.classList.add('section-hidden');
+                archiveSectionGlobalRef.style.maxHeight = "0px";
+            }
             
-            detailsContainer.querySelector('.back-button').addEventListener('click', hidePositionDetails);
+            detailsContainerGlobalRef.innerHTML = detailHtml;
+            detailsContainerGlobalRef.classList.remove('section-hidden');
+            detailsContainerGlobalRef.style.maxHeight = detailsContainerGlobalRef.scrollHeight + "px"; // Set max-height to content height for transition
+            
+            detailsContainerGlobalRef.querySelector('.back-button').addEventListener('click', hidePositionDetails);
             window.scrollTo(0, 0);
         }
 
         function hidePositionDetails() {
-            const overviewSection = document.querySelector('.positions-overview');
-            const archiveSection = document.querySelector('.positions-archive');
-            const detailsContainer = document.getElementById('details-section-container');
-            
-            if (detailsContainer) detailsContainer.style.display = 'none';
-            if (overviewSection) overviewSection.style.display = 'flex'; // Oder 'block'
-            if (archiveSection && document.querySelector('.archived-position')) { // Zeige Archiv nur, wenn es Inhalt hat
-                 archiveSection.style.display = 'flex'; // Oder 'block'
+            if (detailsContainerGlobalRef) {
+                detailsContainerGlobalRef.classList.add('section-hidden');
+                detailsContainerGlobalRef.style.maxHeight = "0px";
+            }
+            if (overviewSectionGlobalRef) {
+                overviewSectionGlobalRef.classList.remove('section-hidden');
+                 overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px";
+            }
+            if (archiveSectionGlobalRef && document.querySelector('.archived-position')) {
+                 archiveSectionGlobalRef.classList.remove('section-hidden');
+                 archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px";
             }
         }
 
