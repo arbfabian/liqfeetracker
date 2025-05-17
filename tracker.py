@@ -10,7 +10,7 @@ load_dotenv()
 # --- Konfiguration ---
 ARBITRUM_RPC_URL = os.getenv('ARBITRUM_RPC')
 WALLET_ADDRESS = os.getenv('WALLET_ADDRESS')
-CONFIG_FILE_POSITIONS = "positions_to_track.txt"
+CONFIG_FILE_POSITIONS = "positions_to_track.txt" # Hier stehen jetzt ID und Investment
 JSON_DATA_FILE = "fees_data.json"
 
 # --- Konstanten ---
@@ -104,24 +104,32 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
     except Exception as e_gen: print(f"    Error fetching price for {contract_address}: {e_gen}")
     return None
 
-
-# --- Funktion zum Lesen der Positions-IDs ---
-def get_position_ids_from_file(filename=CONFIG_FILE_POSITIONS):
-    position_ids = []
+# --- Funktion zum Lesen der Positions-IDs und Investments aus der Konfigurationsdatei ---
+def get_positions_config(filename=CONFIG_FILE_POSITIONS):
+    positions_config_data = [] # Liste von Dictionaries: [{'id': 123, 'investment': 5000.0}, ...]
     try:
         if os.path.exists(filename):
             with open(filename, 'r') as f:
-                for line in f:
+                for line_number, line in enumerate(f, 1):
                     line = line.strip()
-                    if line and line.isdigit():
-                        position_ids.append(int(line))
-            print(f"Found position IDs in '{filename}': {position_ids}")
+                    if not line or line.startswith('#'): # Ignoriere leere Zeilen und Kommentare
+                        continue
+                    parts = line.split(',')
+                    if len(parts) == 2:
+                        try:
+                            position_id = int(parts[0].strip())
+                            investment_usd = float(parts[1].strip())
+                            positions_config_data.append({'id': position_id, 'initial_investment_usd': investment_usd})
+                        except ValueError:
+                            print(f"Warning: Ungültiges Format in '{filename}' Zeile {line_number}: '{line}'. Erwarte ID (Integer), INVESTMENT_USD (Float)")
+                    else:
+                        print(f"Warning: Ungültiges Format in '{filename}' Zeile {line_number}: '{line}'. Erwarte 'ID,INVESTMENT_USD'")
+            print(f"Gefundene Positionskonfigurationen in '{filename}': {positions_config_data}")
         else:
-            print(f"Warning: Position ID file '{filename}' not found.")
+            print(f"Warning: Konfigurationsdatei '{filename}' nicht gefunden.")
     except Exception as e:
-        print(f"Error reading position ID file '{filename}': {e}")
-    return position_ids
-
+        print(f"Fehler beim Lesen der Konfigurationsdatei '{filename}': {e}")
+    return positions_config_data
 
 # --- Hauptlogik ---
 def main():
@@ -141,22 +149,36 @@ def main():
 
     nfpm_contract = w3.eth.contract(address=NFPM_ADDRESS, abi=NFPM_ABI)
     
-    position_ids_to_track = get_position_ids_from_file()
-    if not position_ids_to_track:
-        print("No valid position IDs found in config file. Exiting.")
+    positions_to_track_config = get_positions_config() # Holt IDs und Investments
+    if not positions_to_track_config:
+        print("Keine gültigen Positionskonfigurationen gefunden. Beende.")
         return
 
     today_utc = datetime.now(timezone.utc)
     today_date_str = today_utc.strftime('%Y-%m-%d')
     yesterday_date_str = (today_utc - timedelta(days=1)).strftime('%Y-%m-%d')
     
-    for position_nft_id in position_ids_to_track:
+    for pos_config_item in positions_to_track_config:
+        position_nft_id = pos_config_item['id']
+        initial_investment_from_config = pos_config_item['initial_investment_usd']
         position_key = f"position_{position_nft_id}"
         
+        # Initialen Positions-Eintrag in all_data erstellen, falls nicht vorhanden
         if position_key not in all_data:
             all_data[position_key] = {"history": {}}
-        elif "history" not in all_data[position_key]:
+        elif "history" not in all_data[position_key]: # Für Altdaten-Kompatibilität
              all_data[position_key]["history"] = {}
+
+        # Initialinvestment nur setzen, wenn es in fees_data.json für diese Position noch nicht existiert
+        if "initial_investment_usd" not in all_data[position_key]:
+            all_data[position_key]["initial_investment_usd"] = initial_investment_from_config
+            print(f"  Initialinvestment für {position_key} ({initial_investment_from_config} USD) aus {CONFIG_FILE_POSITIONS} in JSON gespeichert.")
+        # Optional: Eine Warnung ausgeben, wenn der Wert in der TXT-Datei von einem bereits gespeicherten Wert abweicht,
+        # aber nicht überschreiben, wenn die obige Logik "nur setzen, wenn nicht vorhanden" gilt.
+        # elif all_data[position_key]["initial_investment_usd"] != initial_investment_from_config:
+        #     print(f"  Hinweis: Initialinvestment für {position_key} in {CONFIG_FILE_POSITIONS} ({initial_investment_from_config} USD) "
+        #           f"weicht vom gespeicherten Wert ({all_data[position_key]['initial_investment_usd']} USD) in JSON ab. Der gespeicherte Wert wird beibehalten.")
+
 
         print(f"\n--- Processing Position ID: {position_nft_id} for {today_date_str} ---")
         try:
@@ -180,9 +202,6 @@ def main():
             token0_decimals = token0_contract.functions.decimals().call()
             token1_decimals = token1_contract.functions.decimals().call()
             
-            # Token-Symbole holen
-            # Wenn token_pair_symbols bereits existiert, verwenden wir diese.
-            # Ansonsten von der Blockchain holen und speichern.
             current_token0_symbol = None
             current_token1_symbol = None
 
@@ -191,21 +210,20 @@ def main():
                 if len(symbols) == 2:
                     current_token0_symbol = symbols[0]
                     current_token1_symbol = symbols[1]
-                    print(f"  Using stored token symbols: {current_token0_symbol}/{current_token1_symbol}")
             
             if not current_token0_symbol or not current_token1_symbol:
                 current_token0_symbol = token0_contract.functions.symbol().call()
                 current_token1_symbol = token1_contract.functions.symbol().call()
                 all_data[position_key]["token_pair_symbols"] = f"{current_token0_symbol}/{current_token1_symbol}"
-                print(f"  Fetched and stored token symbols: {current_token0_symbol}/{current_token1_symbol}")
+                print(f"  Token-Symbole für {position_key} ({current_token0_symbol}/{current_token1_symbol}) in JSON gespeichert.")
 
 
             current_unclaimed_fees_token0_actual = unclaimed_fees_token0_raw / (10**token0_decimals)
             current_unclaimed_fees_token1_actual = unclaimed_fees_token1_raw / (10**token1_decimals)
 
             print(f"  Total Unclaimed Fees (Simulated Collect):")
-            print(f"    {current_token0_symbol}: {current_unclaimed_fees_token0_actual:.8f} (Raw: {unclaimed_fees_token0_raw})")
-            print(f"    {current_token1_symbol}: {current_unclaimed_fees_token1_actual:.8f} (Raw: {unclaimed_fees_token1_raw})")
+            print(f"    {current_token0_symbol}: {current_unclaimed_fees_token0_actual:.8f}")
+            print(f"    {current_token1_symbol}: {current_unclaimed_fees_token1_actual:.8f}")
 
             price_token0_usd = get_single_token_price_coingecko(token0_address_checksum)
             price_token1_usd = get_single_token_price_coingecko(token1_address_checksum)
@@ -216,25 +234,21 @@ def main():
 
             if price_token0_usd is not None:
                 current_unclaimed_token0_usd_val = current_unclaimed_fees_token0_actual * price_token0_usd
-                print(f"    {current_token0_symbol} USD Value (Total Unclaimed): ${current_unclaimed_token0_usd_val:.2f} (Price: ${price_token0_usd})")
             if price_token1_usd is not None:
                 current_unclaimed_token1_usd_val = current_unclaimed_fees_token1_actual * price_token1_usd
-                print(f"    {current_token1_symbol} USD Value (Total Unclaimed): ${current_unclaimed_token1_usd_val:.2f} (Price: ${price_token1_usd})")
             
             if current_unclaimed_token0_usd_val is not None and current_unclaimed_token1_usd_val is not None:
                 current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
-                print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
             elif current_unclaimed_token0_usd_val is not None:
                  current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
-                 print(f"    Total USD Value (Total Unclaimed, {current_token1_symbol} price missing): ${current_total_unclaimed_usd_val:.2f}")
             elif current_unclaimed_token1_usd_val is not None:
                  current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
-                 print(f"    Total USD Value (Total Unclaimed, {current_token0_symbol} price missing): ${current_total_unclaimed_usd_val:.2f}")
+            
+            if current_total_unclaimed_usd_val is not None:
+                print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
 
 
-            # Daten für den heutigen Tag vorbereiten
             today_data_entry = {
-                # "token0_symbol" und "token1_symbol" werden hier nicht mehr gespeichert
                 "total_unclaimed_fees": {
                     "token0_actual": current_unclaimed_fees_token0_actual,
                     "token1_actual": current_unclaimed_fees_token1_actual,
@@ -242,11 +256,9 @@ def main():
                     "token1_usd": current_unclaimed_token1_usd_val,
                     "total_usd": current_total_unclaimed_usd_val
                 },
-                "daily_earned_fees": {}, # Wird unten befüllt
-                # "raw_data_optional" wird nicht mehr gespeichert
+                "daily_earned_fees": {}
             }
             
-            # Tägliche Gebühren berechnen
             yesterday_full_data = all_data[position_key]["history"].get(yesterday_date_str)
             
             daily_earned_token0_actual = current_unclaimed_fees_token0_actual
@@ -256,13 +268,7 @@ def main():
                 yesterday_total_fees = yesterday_full_data["total_unclaimed_fees"]
                 daily_earned_token0_actual -= yesterday_total_fees.get("token0_actual", 0)
                 daily_earned_token1_actual -= yesterday_total_fees.get("token1_actual", 0)
-                
-                print(f"  Yesterday's total unclaimed for {position_nft_id}: "
-                      f"{yesterday_total_fees.get('token0_actual', 0):.8f} {current_token0_symbol}, "
-                      f"{yesterday_total_fees.get('token1_actual', 0):.8f} {current_token1_symbol}")
-            else:
-                print(f"  No data for {yesterday_date_str} for position {position_nft_id}. Total unclaimed is today's earned.")
-
+            
             daily_earned_token0_actual = max(0, daily_earned_token0_actual)
             daily_earned_token1_actual = max(0, daily_earned_token1_actual)
 
@@ -282,7 +288,6 @@ def main():
             elif daily_earned_token1_usd_val is not None:
                  daily_total_earned_usd_val = daily_earned_token1_usd_val
 
-
             today_data_entry["daily_earned_fees"] = {
                 "token0_actual": daily_earned_token0_actual,
                 "token1_actual": daily_earned_token1_actual,
@@ -294,19 +299,18 @@ def main():
             all_data[position_key]["history"][today_date_str] = today_data_entry
             all_data[position_key]["last_updated_utc"] = today_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-
             print(f"\n  --- Fees Earned on {today_date_str} for Position {position_nft_id} ---")
-            print(f"    {current_token0_symbol}: {daily_earned_token0_actual:.8f}")
-            if daily_earned_token0_usd_val is not None: print(f"      USD Value: ${daily_earned_token0_usd_val:.2f}")
-            print(f"    {current_token1_symbol}: {daily_earned_token1_actual:.8f}")
-            if daily_earned_token1_usd_val is not None: print(f"      USD Value: ${daily_earned_token1_usd_val:.2f}")
-            if daily_total_earned_usd_val is not None: print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
+            print(f"    {current_token0_symbol}: {daily_earned_token0_actual:.8f} "
+                  f"(${(daily_earned_token0_usd_val or 0.0):.2f})")
+            print(f"    {current_token1_symbol}: {daily_earned_token1_actual:.8f} "
+                  f"(${(daily_earned_token1_usd_val or 0.0):.2f})")
+            if daily_total_earned_usd_val is not None:
+                print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
         
         except Exception as e_inner:
             print(f"An error occurred processing position ID {position_nft_id}: {e_inner}")
             import traceback
             traceback.print_exc()
-            print(f"--- Finished processing position {position_nft_id} With Errors ---")
         
     save_json_data(all_data)
     print(f"\n--- Fee Tracker Finished All Positions ---")
