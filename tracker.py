@@ -10,10 +10,10 @@ load_dotenv()
 # --- Konfiguration ---
 ARBITRUM_RPC_URL = os.getenv('ARBITRUM_RPC')
 WALLET_ADDRESS = os.getenv('WALLET_ADDRESS')
-CONFIG_FILE_POSITIONS = "positions_to_track.txt"
+CONFIG_FILE_POSITIONS = "positions_to_track.txt" # Enthält immer nur EINE aktive Position
 JSON_DATA_FILE = "fees_data.json"
 
-# ... (Restliche Konstanten NFPM_ADDRESS, ABI etc. bleiben gleich) ...
+# --- Konstanten (NFPM_ADDRESS, ABI etc. bleiben gleich) ---
 NFPM_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88"
 NFPM_ABI = json.loads("""
 [
@@ -68,7 +68,6 @@ ERC20_ABI_MINIMAL = json.loads("""
 ]
 """)
 
-
 def load_json_data(filename=JSON_DATA_FILE):
     if os.path.exists(filename):
         try:
@@ -101,31 +100,44 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
     except Exception as e_gen: print(f"    Error fetching price for {contract_address}: {e_gen}")
     return None
 
-def get_positions_config(filename=CONFIG_FILE_POSITIONS):
-    positions_config_data = []
+def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
+    # Diese Funktion liest jetzt nur noch EINE Zeile (die aktive Position)
+    # oder gibt None zurück, wenn die Datei leer ist oder ein Fehler auftritt.
     try:
         if os.path.exists(filename):
             with open(filename, 'r') as f:
-                for line_number, line in enumerate(f, 1):
+                lines = f.readlines()
+                if not lines:
+                    print(f"Warning: Konfigurationsdatei '{filename}' ist leer.")
+                    return None
+                
+                # Nimm die erste nicht-leere, nicht-kommentierte Zeile
+                for line_number, line in enumerate(lines, 1):
                     line = line.strip()
                     if not line or line.startswith('#'):
                         continue
+                    
                     parts = line.split(',')
                     if len(parts) == 2:
                         try:
                             position_id = int(parts[0].strip())
                             investment_usd = float(parts[1].strip())
-                            positions_config_data.append({'id': position_id, 'initial_investment_usd': investment_usd})
+                            print(f"Aktive Position aus '{filename}': ID {position_id}, Investment {investment_usd} USD")
+                            return {'id': position_id, 'initial_investment_usd': investment_usd}
                         except ValueError:
-                            print(f"Warning: Ungültiges Format in '{filename}' Zeile {line_number}: '{line}'. Erwarte ID (Integer), INVESTMENT_USD (Float)")
+                            print(f"Error: Ungültiges Format in '{filename}' Zeile {line_number}: '{line}'. Erwarte ID (Integer), INVESTMENT_USD (Float)")
+                            return None
                     else:
-                        print(f"Warning: Ungültiges Format in '{filename}' Zeile {line_number}: '{line}'. Erwarte 'ID,INVESTMENT_USD'")
-            print(f"Gefundene Positionskonfigurationen in '{filename}': {positions_config_data}")
+                        print(f"Error: Ungültiges Format in '{filename}' Zeile {line_number}: '{line}'. Erwarte 'ID,INVESTMENT_USD'")
+                        return None
+                print(f"Warning: Keine gültige Positionszeile in '{filename}' gefunden.")
+                return None # Falls nur leere/Kommentarzeilen da sind
         else:
             print(f"Warning: Konfigurationsdatei '{filename}' nicht gefunden.")
+            return None
     except Exception as e:
         print(f"Fehler beim Lesen der Konfigurationsdatei '{filename}': {e}")
-    return positions_config_data
+        return None
 
 def main():
     print(f"--- Starting Uniswap V3 Fee Tracker ---")
@@ -143,187 +155,182 @@ def main():
 
     nfpm_contract = w3.eth.contract(address=NFPM_ADDRESS, abi=NFPM_ABI)
     
-    # Lade die aktuell zu trackenden Positionen aus der Konfig-Datei
-    active_positions_config = get_positions_config()
-    if not active_positions_config:
-        print("Keine aktiven Positionen in der Konfigurationsdatei gefunden. Es werden keine Gebühren aktualisiert.")
-        # Optional: Hier könntest du Logik hinzufügen, um alle Positionen in all_data als "inaktiv" zu markieren,
-        # falls das für die Webseiten-Darstellung gewünscht ist.
-        # Aber das Speichern von all_data am Ende sorgt dafür, dass alte Daten erhalten bleiben.
-        save_json_data(all_data) # Speichere, falls z.B. nur initial_investment_usd für eine neue Position gesetzt wurde
+    active_pos_config = get_active_position_config() # Holt die EINE aktive Position
+
+    active_position_id_from_config = None
+    if active_pos_config:
+        active_position_id_from_config = active_pos_config['id']
+
+    # Alle Positionen in fees_data.json durchgehen und is_active setzen
+    for pos_key_in_json in list(all_data.keys()): # list() für Kopie, falls man Keys löschen würde (hier nicht der Fall)
+        if pos_key_in_json.startswith("position_"):
+            position_id_in_json = int(pos_key_in_json.replace("position_", ""))
+            if active_position_id_from_config is not None and position_id_in_json == active_position_id_from_config:
+                all_data[pos_key_in_json]["is_active"] = True
+            else:
+                # Wenn es eine aktive Position gibt, aber diese nicht die aktuelle ist, ODER wenn es gar keine aktive gibt
+                all_data[pos_key_in_json]["is_active"] = False
+
+
+    if not active_pos_config:
+        print("Keine aktive Position in der Konfigurationsdatei definiert. Es werden keine Gebühren aktualisiert.")
+        save_json_data(all_data) # Speichere, um ggf. is_active Flags zu aktualisieren
         return
+
+    # Jetzt die aktive Position verarbeiten
+    position_nft_id = active_pos_config['id']
+    initial_investment_from_config = active_pos_config['initial_investment_usd']
+    position_key = f"position_{position_nft_id}"
 
     today_utc = datetime.now(timezone.utc)
     today_date_str = today_utc.strftime('%Y-%m-%d')
     yesterday_date_str = (today_utc - timedelta(days=1)).strftime('%Y-%m-%d')
 
-    # Erstelle eine Liste der IDs der aktiven Positionen für schnellen Zugriff
-    active_position_ids = [p['id'] for p in active_positions_config]
+    if position_key not in all_data:
+        all_data[position_key] = {"history": {}, "is_active": True}
+        print(f"  Neue Position {position_key} wird initialisiert.")
+    elif "history" not in all_data[position_key]:
+         all_data[position_key]["history"] = {}
+    
+    all_data[position_key]["is_active"] = True # Sicherstellen, dass sie als aktiv markiert ist
 
-    # Markiere alle Positionen in all_data (aus fees_data.json) als potenziell inaktiv
-    for pos_key in all_data.keys():
-        if pos_key.startswith("position_"): # Stelle sicher, dass es ein Positionsschlüssel ist
-             all_data[pos_key]["is_active"] = False # Standardmäßig als inaktiv setzen
+    if "initial_investment_usd" not in all_data[position_key]:
+        all_data[position_key]["initial_investment_usd"] = initial_investment_from_config
+        print(f"  Initialinvestment für {position_key} ({initial_investment_from_config} USD) aus {CONFIG_FILE_POSITIONS} in JSON gespeichert.")
 
-    # Verarbeite nur die Positionen, die in active_positions_config definiert sind
-    for pos_config_item in active_positions_config:
-        position_nft_id = pos_config_item['id']
-        initial_investment_from_config = pos_config_item['initial_investment_usd']
-        position_key = f"position_{position_nft_id}"
+    print(f"\n--- Processing ACTIVE Position ID: {position_nft_id} for {today_date_str} ---")
+    try:
+        # ... (Rest der Gebührenabruf- und Berechnungslogik bleibt EXAKT GLEICH wie zuvor) ...
+        # Nur ein Beispielausschnitt, der Rest ist identisch:
+        position_details = nfpm_contract.functions.positions(position_nft_id).call()
+        token0_address_checksum = Web3.to_checksum_address(position_details[2])
+        token1_address_checksum = Web3.to_checksum_address(position_details[3])
 
-        # Initialen Positions-Eintrag in all_data erstellen, falls nicht vorhanden
-        if position_key not in all_data:
-            all_data[position_key] = {"history": {}, "is_active": True} # Direkt als aktiv markieren
-            print(f"  Neue Position {position_key} wird initialisiert.")
-        elif "history" not in all_data[position_key]:
-             all_data[position_key]["history"] = {}
-             all_data[position_key]["is_active"] = True # Aktiv markieren
+        collect_params = (
+            position_nft_id,
+            Web3.to_checksum_address(WALLET_ADDRESS),
+            2**128 - 1, 
+            2**128 - 1  
+        )
+        simulated_collect = nfpm_contract.functions.collect(collect_params).call({'from': Web3.to_checksum_address(WALLET_ADDRESS)})
+        unclaimed_fees_token0_raw = simulated_collect[0]
+        unclaimed_fees_token1_raw = simulated_collect[1]
+        
+        token0_contract = w3.eth.contract(address=token0_address_checksum, abi=ERC20_ABI_MINIMAL)
+        token1_contract = w3.eth.contract(address=token1_address_checksum, abi=ERC20_ABI_MINIMAL)
+        
+        token0_decimals = token0_contract.functions.decimals().call()
+        token1_decimals = token1_contract.functions.decimals().call()
+        
+        current_token0_symbol = None
+        current_token1_symbol = None
 
-        all_data[position_key]["is_active"] = True # Als aktiv markieren für diesen Lauf
-
-        if "initial_investment_usd" not in all_data[position_key]:
-            all_data[position_key]["initial_investment_usd"] = initial_investment_from_config
-            print(f"  Initialinvestment für {position_key} ({initial_investment_from_config} USD) aus {CONFIG_FILE_POSITIONS} in JSON gespeichert.")
-
-        print(f"\n--- Processing ACTIVE Position ID: {position_nft_id} for {today_date_str} ---")
-        try:
-            # ... (Rest der Gebührenabruf- und Berechnungslogik bleibt EXAKT GLEICH wie zuvor) ...
-            # Nur ein Beispielausschnitt, der Rest ist identisch:
-            position_details = nfpm_contract.functions.positions(position_nft_id).call()
-            token0_address_checksum = Web3.to_checksum_address(position_details[2])
-            token1_address_checksum = Web3.to_checksum_address(position_details[3])
-
-            collect_params = (
-                position_nft_id,
-                Web3.to_checksum_address(WALLET_ADDRESS),
-                2**128 - 1, 
-                2**128 - 1  
-            )
-            simulated_collect = nfpm_contract.functions.collect(collect_params).call({'from': Web3.to_checksum_address(WALLET_ADDRESS)})
-            unclaimed_fees_token0_raw = simulated_collect[0]
-            unclaimed_fees_token1_raw = simulated_collect[1]
-            
-            token0_contract = w3.eth.contract(address=token0_address_checksum, abi=ERC20_ABI_MINIMAL)
-            token1_contract = w3.eth.contract(address=token1_address_checksum, abi=ERC20_ABI_MINIMAL)
-            
-            token0_decimals = token0_contract.functions.decimals().call()
-            token1_decimals = token1_contract.functions.decimals().call()
-            
-            current_token0_symbol = None
-            current_token1_symbol = None
-
-            if "token_pair_symbols" in all_data[position_key] and all_data[position_key]["token_pair_symbols"]:
-                symbols = all_data[position_key]["token_pair_symbols"].split('/')
-                if len(symbols) == 2:
-                    current_token0_symbol = symbols[0]
-                    current_token1_symbol = symbols[1]
-            
-            if not current_token0_symbol or not current_token1_symbol:
-                current_token0_symbol = token0_contract.functions.symbol().call()
-                current_token1_symbol = token1_contract.functions.symbol().call()
-                all_data[position_key]["token_pair_symbols"] = f"{current_token0_symbol}/{current_token1_symbol}"
-                print(f"  Token-Symbole für {position_key} ({current_token0_symbol}/{current_token1_symbol}) in JSON gespeichert.")
+        if "token_pair_symbols" in all_data[position_key] and all_data[position_key]["token_pair_symbols"]:
+            symbols = all_data[position_key]["token_pair_symbols"].split('/')
+            if len(symbols) == 2:
+                current_token0_symbol = symbols[0]
+                current_token1_symbol = symbols[1]
+        
+        if not current_token0_symbol or not current_token1_symbol:
+            current_token0_symbol = token0_contract.functions.symbol().call()
+            current_token1_symbol = token1_contract.functions.symbol().call()
+            all_data[position_key]["token_pair_symbols"] = f"{current_token0_symbol}/{current_token1_symbol}"
+            print(f"  Token-Symbole für {position_key} ({current_token0_symbol}/{current_token1_symbol}) in JSON gespeichert.")
 
 
-            current_unclaimed_fees_token0_actual = unclaimed_fees_token0_raw / (10**token0_decimals)
-            current_unclaimed_fees_token1_actual = unclaimed_fees_token1_raw / (10**token1_decimals)
+        current_unclaimed_fees_token0_actual = unclaimed_fees_token0_raw / (10**token0_decimals)
+        current_unclaimed_fees_token1_actual = unclaimed_fees_token1_raw / (10**token1_decimals)
 
-            print(f"  Total Unclaimed Fees (Simulated Collect):")
-            print(f"    {current_token0_symbol}: {current_unclaimed_fees_token0_actual:.8f}")
-            print(f"    {current_token1_symbol}: {current_unclaimed_fees_token1_actual:.8f}")
+        print(f"  Total Unclaimed Fees (Simulated Collect):")
+        print(f"    {current_token0_symbol}: {current_unclaimed_fees_token0_actual:.8f}")
+        print(f"    {current_token1_symbol}: {current_unclaimed_fees_token1_actual:.8f}")
 
-            price_token0_usd = get_single_token_price_coingecko(token0_address_checksum)
-            price_token1_usd = get_single_token_price_coingecko(token1_address_checksum)
-            
-            current_unclaimed_token0_usd_val = None
-            current_unclaimed_token1_usd_val = None
-            current_total_unclaimed_usd_val = None
+        price_token0_usd = get_single_token_price_coingecko(token0_address_checksum)
+        price_token1_usd = get_single_token_price_coingecko(token1_address_checksum)
+        
+        current_unclaimed_token0_usd_val = None
+        current_unclaimed_token1_usd_val = None
+        current_total_unclaimed_usd_val = None
 
-            if price_token0_usd is not None:
-                current_unclaimed_token0_usd_val = current_unclaimed_fees_token0_actual * price_token0_usd
-            if price_token1_usd is not None:
-                current_unclaimed_token1_usd_val = current_unclaimed_fees_token1_actual * price_token1_usd
-            
-            if current_unclaimed_token0_usd_val is not None and current_unclaimed_token1_usd_val is not None:
-                current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
-            elif current_unclaimed_token0_usd_val is not None:
-                 current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
-            elif current_unclaimed_token1_usd_val is not None:
-                 current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
-            
-            if current_total_unclaimed_usd_val is not None:
-                print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
+        if price_token0_usd is not None:
+            current_unclaimed_token0_usd_val = current_unclaimed_fees_token0_actual * price_token0_usd
+        if price_token1_usd is not None:
+            current_unclaimed_token1_usd_val = current_unclaimed_fees_token1_actual * price_token1_usd
+        
+        if current_unclaimed_token0_usd_val is not None and current_unclaimed_token1_usd_val is not None:
+            current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
+        elif current_unclaimed_token0_usd_val is not None:
+             current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
+        elif current_unclaimed_token1_usd_val is not None:
+             current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
+        
+        if current_total_unclaimed_usd_val is not None:
+            print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
 
 
-            today_data_entry = {
-                "total_unclaimed_fees": {
-                    "token0_actual": current_unclaimed_fees_token0_actual,
-                    "token1_actual": current_unclaimed_fees_token1_actual,
-                    "token0_usd": current_unclaimed_token0_usd_val,
-                    "token1_usd": current_unclaimed_token1_usd_val,
-                    "total_usd": current_total_unclaimed_usd_val
-                },
-                "daily_earned_fees": {}
-            }
-            
-            yesterday_full_data = all_data[position_key]["history"].get(yesterday_date_str)
-            
-            daily_earned_token0_actual = current_unclaimed_fees_token0_actual
-            daily_earned_token1_actual = current_unclaimed_fees_token1_actual
-            
-            if yesterday_full_data and "total_unclaimed_fees" in yesterday_full_data:
-                yesterday_total_fees = yesterday_full_data["total_unclaimed_fees"]
-                daily_earned_token0_actual -= yesterday_total_fees.get("token0_actual", 0)
-                daily_earned_token1_actual -= yesterday_total_fees.get("token1_actual", 0)
-            
-            daily_earned_token0_actual = max(0, daily_earned_token0_actual)
-            daily_earned_token1_actual = max(0, daily_earned_token1_actual)
+        today_data_entry = {
+            "total_unclaimed_fees": {
+                "token0_actual": current_unclaimed_fees_token0_actual,
+                "token1_actual": current_unclaimed_fees_token1_actual,
+                "token0_usd": current_unclaimed_token0_usd_val,
+                "token1_usd": current_unclaimed_token1_usd_val,
+                "total_usd": current_total_unclaimed_usd_val
+            },
+            "daily_earned_fees": {}
+        }
+        
+        yesterday_full_data = all_data[position_key]["history"].get(yesterday_date_str)
+        
+        daily_earned_token0_actual = current_unclaimed_fees_token0_actual
+        daily_earned_token1_actual = current_unclaimed_fees_token1_actual
+        
+        if yesterday_full_data and "total_unclaimed_fees" in yesterday_full_data:
+            yesterday_total_fees = yesterday_full_data["total_unclaimed_fees"]
+            daily_earned_token0_actual -= yesterday_total_fees.get("token0_actual", 0)
+            daily_earned_token1_actual -= yesterday_total_fees.get("token1_actual", 0)
+        
+        daily_earned_token0_actual = max(0, daily_earned_token0_actual)
+        daily_earned_token1_actual = max(0, daily_earned_token1_actual)
 
-            daily_earned_token0_usd_val = None
-            daily_earned_token1_usd_val = None
-            daily_total_earned_usd_val = None
+        daily_earned_token0_usd_val = None
+        daily_earned_token1_usd_val = None
+        daily_total_earned_usd_val = None
 
-            if price_token0_usd is not None:
-                daily_earned_token0_usd_val = daily_earned_token0_actual * price_token0_usd
-            if price_token1_usd is not None:
-                daily_earned_token1_usd_val = daily_earned_token1_actual * price_token1_usd
-            
-            if daily_earned_token0_usd_val is not None and daily_earned_token1_usd_val is not None:
-                daily_total_earned_usd_val = daily_earned_token0_usd_val + daily_earned_token1_usd_val
-            elif daily_earned_token0_usd_val is not None:
-                 daily_total_earned_usd_val = daily_earned_token0_usd_val
-            elif daily_earned_token1_usd_val is not None:
-                 daily_total_earned_usd_val = daily_earned_token1_usd_val
+        if price_token0_usd is not None:
+            daily_earned_token0_usd_val = daily_earned_token0_actual * price_token0_usd
+        if price_token1_usd is not None:
+            daily_earned_token1_usd_val = daily_earned_token1_actual * price_token1_usd
+        
+        if daily_earned_token0_usd_val is not None and daily_earned_token1_usd_val is not None:
+            daily_total_earned_usd_val = daily_earned_token0_usd_val + daily_earned_token1_usd_val
+        elif daily_earned_token0_usd_val is not None:
+             daily_total_earned_usd_val = daily_earned_token0_usd_val
+        elif daily_earned_token1_usd_val is not None:
+             daily_total_earned_usd_val = daily_earned_token1_usd_val
 
-            today_data_entry["daily_earned_fees"] = {
-                "token0_actual": daily_earned_token0_actual,
-                "token1_actual": daily_earned_token1_actual,
-                "token0_usd": daily_earned_token0_usd_val,
-                "token1_usd": daily_earned_token1_usd_val,
-                "total_usd": daily_total_earned_usd_val
-            }
-            
-            all_data[position_key]["history"][today_date_str] = today_data_entry
-            all_data[position_key]["last_updated_utc"] = today_utc.strftime('%Y-%m-%dT%H:%M:%SZ') # Wichtig für "is_active" Logik unten
+        today_data_entry["daily_earned_fees"] = {
+            "token0_actual": daily_earned_token0_actual,
+            "token1_actual": daily_earned_token1_actual,
+            "token0_usd": daily_earned_token0_usd_val,
+            "token1_usd": daily_earned_token1_usd_val,
+            "total_usd": daily_total_earned_usd_val
+        }
+        
+        all_data[position_key]["history"][today_date_str] = today_data_entry
+        all_data[position_key]["last_updated_utc"] = today_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-            print(f"\n  --- Fees Earned on {today_date_str} for Position {position_nft_id} ---")
-            print(f"    {current_token0_symbol}: {daily_earned_token0_actual:.8f} "
-                  f"(${(daily_earned_token0_usd_val or 0.0):.2f})")
-            print(f"    {current_token1_symbol}: {daily_earned_token1_actual:.8f} "
-                  f"(${(daily_earned_token1_usd_val or 0.0):.2f})")
-            if daily_total_earned_usd_val is not None:
-                print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
+        print(f"\n  --- Fees Earned on {today_date_str} for Position {position_nft_id} ---")
+        print(f"    {current_token0_symbol}: {daily_earned_token0_actual:.8f} "
+              f"(${(daily_earned_token0_usd_val or 0.0):.2f})")
+        print(f"    {current_token1_symbol}: {daily_earned_token1_actual:.8f} "
+              f"(${(daily_earned_token1_usd_val or 0.0):.2f})")
+        if daily_total_earned_usd_val is not None:
+            print(f"    Total USD Value (Earned Today): ${daily_total_earned_usd_val:.2f}")
 
-        except Exception as e_inner:
-            print(f"An error occurred processing position ID {position_nft_id}: {e_inner}")
-            import traceback
-            traceback.print_exc()
-
-    # Überprüfe, ob eine Position, die vorher aktiv war, jetzt nicht mehr in der config ist.
-    # Eine robustere Methode für "is_active" wäre, das last_updated_utc zu prüfen.
-    # Wenn eine Position in `all_data` nicht heute aktualisiert wurde UND nicht in `active_position_ids` ist,
-    # könnte sie als "geschlossen" betrachtet werden. Die obige `all_data[pos_key]["is_active"] = False`
-    # und dann `all_data[position_key]["is_active"] = True` Logik macht das schon.
+    except Exception as e_inner:
+        print(f"An error occurred processing position ID {position_nft_id}: {e_inner}")
+        import traceback
+        traceback.print_exc()
             
     save_json_data(all_data)
     print(f"\n--- Fee Tracker Finished All Positions ---")
