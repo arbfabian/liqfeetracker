@@ -3,119 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uniswap V3 LP Fee Tracker</title>
+    <title>Uniswap V3 LP Gebühren Tracker</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        h1 { text-align: center; color: #2c3e50; }
+        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 30px;} /* Für den Haupttitel */
+        
+        .positions-overview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .position-summary-card {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 300px; /* Oder eine responsive Breite z.B. calc(33.333% - 20px) */
+            text-align: left; /* Inhalte linksbündig in der Karte */
+        }
+
+        .position-summary-card h2 {
+            margin-top: 0;
+            font-size: 1.2em; /* Etwas kleiner für die Karte */
+            color: #34495e;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+         .position-summary-card p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+
+        .details-button, .back-button { /* .back-button hinzugefügt */
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .details-button:hover, .back-button:hover { /* .back-button hinzugefügt */
+            background-color: #2980b9;
+        }
+
+        /* Stile für die Detailansicht (deine existierenden sind gut) */
+        .position-block { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background-color: #e8eff5; color: #2c3e50; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
-        .position-block { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
-        #data-container p { text-align: center; font-size: 1.1em; }
-        #data-container p.error-message { color: red; font-weight: bold; }
+        #data-container p.error-message { color: red; font-weight: bold; text-align:center; }
+        #data-container p.loading-message { text-align: center; font-size: 1.1em; }
+
     </style>
 </head>
 <body>
-    <h1>Uniswap V3 LP Gebühren Tracker</h1>
+    <h1 class="main-title">Uniswap V3 LP Gebühren Tracker</h1>
     <div id="data-container">
-        <p>Lade Daten...</p>
+        <p class="loading-message">Lade Daten...</p>
     </div>
 
     <script>
         async function loadAndDisplayFees() {
             const dataContainer = document.getElementById('data-container');
-            dataContainer.innerHTML = '<p>Lade Gebührendaten...</p>'; 
+            dataContainer.innerHTML = '<p class="loading-message">Lade Gebührendaten...</p>';
 
             try {
-                // Pfad zur JSON-Datei. Anpassen, falls nötig (z.B. '/liqfeetracker/fees_data.json' oder nur 'fees_data.json')
-                // Für Tests mit GitHub Pages ist es oft am besten, den Pfad relativ zum Root des gehosteten Zweigs zu machen.
-                // Wenn dein Repo "liqfeetracker" heißt und du vom Root des main-Branches publizierst:
-                const response = await fetch('fees_data.json?v=' + new Date().getTime()); // Cache-Buster hinzugefügt
-
+                const response = await fetch('fees_data.json?v=' + new Date().getTime());
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status} - Konnte fees_data.json nicht laden. URL: ${response.url}`);
+                    throw new Error(`HTTP error! status: ${response.status} - Konnte fees_data.json nicht laden.`);
                 }
                 const allData = await response.json();
-                console.log("DEBUG: Geladene Rohdaten aus fees_data.json:", JSON.stringify(allData, null, 2));
-
 
                 if (Object.keys(allData).length === 0) {
-                    dataContainer.innerHTML = '<p>Keine Daten gefunden in fees_data.json.</p>';
+                    dataContainer.innerHTML = '<p class="loading-message">Keine Positionsdaten gefunden.</p>';
                     return;
                 }
 
-                let htmlContent = '';
+                let overviewHtml = '<div class="positions-overview">';
 
                 for (const positionIdKey in allData) {
-                    if (allData.hasOwnProperty(positionIdKey)) {
+                    if (allData.hasOwnProperty(positionIdKey) && positionIdKey.startsWith('position_')) {
                         const positionData = allData[positionIdKey];
-                        console.log(`DEBUG: Verarbeite Position ${positionIdKey}`);
-                        
-                        if (!positionData.history || typeof positionData.history !== 'object' || !positionData.token_pair_symbols) {
-                            console.warn(`DEBUG: Position ${positionIdKey} hat nicht die erwartete neue Struktur (history-Objekt, token_pair_symbols). Überspringe. Daten:`, JSON.stringify(positionData, null, 2));
-                            htmlContent += `<div class="position-block"><p class="error-message">Daten für Position ${positionIdKey.replace('position_', '')} konnten nicht korrekt geladen werden (Strukturproblem).</p></div>`;
-                            continue;
-                        }
+                        const positionNumber = positionIdKey.replace('position_', '');
 
-                        htmlContent += `<div class="position-block">`;
-                        htmlContent += `<h2 class="position-title">Position ${positionIdKey.replace('position_', '')} (${positionData.token_pair_symbols})</h2>`;
-                        
-                        const tokenSymbols = positionData.token_pair_symbols.split('/');
-                        const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
-                        const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
-
-                        htmlContent += `<table>`;
-                        htmlContent += `<thead><tr><th>Datum</th><th>Verdient ${token0DisplaySymbol}</th><th>Verdient ${token1DisplaySymbol}</th><th>Verdient Total USD</th></tr></thead>`;
-                        htmlContent += `<tbody>`;
-
-                        const history = positionData.history;
-                        console.log("DEBUG: History-Objekt für Position " + positionIdKey + ":", JSON.stringify(history, null, 2));
-                        
-                        const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a)); 
-                        console.log("DEBUG: Sortierte Daten (Datumsschlüssel) für Position " + positionIdKey + ":", sortedDates);
-
-                        if (sortedDates.length === 0) {
-                             htmlContent += `<tr><td colspan="4">Keine historischen Daten für diese Position gefunden.</td></tr>`;
-                        } else {
-                            for (const date of sortedDates) {
-                                if (history.hasOwnProperty(date)) {
-                                    const dayData = history[date];
-                                    console.log("DEBUG: Verarbeite Datum:", date, "für Position", positionIdKey, "Daten:", JSON.stringify(dayData, null, 2));
-
-                                    if (dayData.daily_earned_fees && typeof dayData.daily_earned_fees === 'object') { 
-                                        const earned = dayData.daily_earned_fees;
-                                        const token0Earned = earned.token0_actual !== null && earned.token0_actual !== undefined ? parseFloat(earned.token0_actual).toFixed(8) : 'N/A';
-                                        const token1Earned = earned.token1_actual !== null && earned.token1_actual !== undefined ? parseFloat(earned.token1_actual).toFixed(8) : 'N/A';
-                                        const totalUSDEarned = earned.total_usd !== null && earned.total_usd !== undefined ? parseFloat(earned.total_usd).toFixed(2) : 'N/A';
-
-                                        htmlContent += `<tr>`;
-                                        htmlContent += `<td>${date}</td>`;
-                                        htmlContent += `<td>${token0Earned}</td>`;
-                                        htmlContent += `<td>${token1Earned}</td>`;
-                                        htmlContent += `<td>$${totalUSDEarned}</td>`;
-                                        htmlContent += `</tr>`;
-                                    } else {
-                                        console.warn(`DEBUG: 'daily_earned_fees' fehlt oder ist kein Objekt für Datum ${date} bei Position ${positionIdKey}`);
-                                        htmlContent += `<tr><td>${date}</td><td colspan="3">Daten für tägliche Gebühren nicht verfügbar.</td></tr>`;
-                                    }
+                        let totalProfitUsd = 0;
+                        if (positionData.history && typeof positionData.history === 'object') {
+                            for (const date in positionData.history) {
+                                if (positionData.history.hasOwnProperty(date) &&
+                                    positionData.history[date].daily_earned_fees &&
+                                    positionData.history[date].daily_earned_fees.total_usd !== null &&
+                                    positionData.history[date].daily_earned_fees.total_usd !== undefined) {
+                                    totalProfitUsd += parseFloat(positionData.history[date].daily_earned_fees.total_usd);
                                 }
                             }
                         }
-                        htmlContent += `</tbody></table>`;
-                        htmlContent += `</div>`;
+
+                        let profitPercentageText = 'N/A';
+                        if (positionData.initial_investment_usd && parseFloat(positionData.initial_investment_usd) > 0) {
+                            const profitPercentage = (totalProfitUsd / parseFloat(positionData.initial_investment_usd)) * 100;
+                            profitPercentageText = `<span style="color: ${profitPercentage >= 0 ? 'green' : 'red'};">${profitPercentage.toFixed(2)}%</span>`;
+                        } else if (positionData.hasOwnProperty('initial_investment_usd')) { // Existiert, ist aber 0 oder ungültig
+                             profitPercentageText = 'Initialinv. ungültig';
+                        }
+
+
+                        overviewHtml += `
+                            <div class="position-summary-card" data-position-id="${positionIdKey}">
+                                <h2>Position ${positionNumber}</h2>
+                                <p><strong>Paar:</strong> ${positionData.token_pair_symbols || 'N/A'}</p>
+                                <p><strong>Gesamtprofit:</strong> <span style="color: ${totalProfitUsd >= 0 ? 'green' : 'red'}; font-weight: bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
+                                <p><strong>Profit %:</strong> ${profitPercentageText}</p>
+                                <p><small>Initial: ${positionData.initial_investment_usd ? parseFloat(positionData.initial_investment_usd).toFixed(2) + ' USD' : 'N/A'}</small></p>
+                                <p><small>Letztes Update: ${positionData.last_updated_utc ? new Date(positionData.last_updated_utc).toLocaleString('de-DE') : 'N/A'}</small></p>
+                                <button class="details-button">Details anzeigen</button>
+                            </div>
+                        `;
                     }
                 }
-                dataContainer.innerHTML = htmlContent || '<p>Keine verarbeitbaren Positionsdaten gefunden.</p>';
+                overviewHtml += '</div>';
+                overviewHtml += '<div id="details-section-container" style="display:none;"></div>'; // Umbenannt für Klarheit
+
+                dataContainer.innerHTML = overviewHtml;
+
+                document.querySelectorAll('.details-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const posId = this.closest('.position-summary-card').dataset.positionId;
+                        showPositionDetails(allData[posId], posId);
+                    });
+                });
 
             } catch (error) {
                 console.error('Fehler beim Laden oder Verarbeiten der Daten:', error);
-                dataContainer.innerHTML = `<p class="error-message">Fehler beim Laden der Daten: ${error.message}</p>`;
-                if (error.stack) {
-                    console.error("Stacktrace:", error.stack);
-                }
+                dataContainer.innerHTML = `<p class="error-message">Fehler: ${error.message}</p>`;
             }
+        }
+
+        function showPositionDetails(positionData, positionIdKey) {
+            const overviewSection = document.querySelector('.positions-overview');
+            const detailsContainer = document.getElementById('details-section-container');
+            const positionNumber = positionIdKey.replace('position_', '');
+
+            let detailHtml = `<div class="position-block">`;
+            detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'})</h2>`;
+            
+            const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
+            const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
+            const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
+
+            detailHtml += `<table><thead><tr><th>Datum</th><th>Verdient ${token0DisplaySymbol}</th><th>Verdient ${token1DisplaySymbol}</th><th>Verdient Total USD</th></tr></thead><tbody>`;
+
+            const history = positionData.history;
+            if (history && typeof history === 'object' && Object.keys(history).length > 0) {
+                const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a));
+                for (const date of sortedDates) {
+                    const dayData = history[date];
+                    if (dayData.daily_earned_fees) {
+                        const earned = dayData.daily_earned_fees;
+                        const token0Earned = earned.token0_actual !== null && earned.token0_actual !== undefined ? parseFloat(earned.token0_actual).toFixed(8) : 'N/A';
+                        const token1Earned = earned.token1_actual !== null && earned.token1_actual !== undefined ? parseFloat(earned.token1_actual).toFixed(8) : 'N/A';
+                        const totalUSDEarned = earned.total_usd !== null && earned.total_usd !== undefined ? '$' + parseFloat(earned.total_usd).toFixed(2) : 'N/A';
+                        detailHtml += `<tr><td>${date}</td><td>${token0Earned}</td><td>${token1Earned}</td><td>${totalUSDEarned}</td></tr>`;
+                    }
+                }
+            } else {
+                detailHtml += `<tr><td colspan="4">Keine historischen Daten für diese Position gefunden.</td></tr>`;
+            }
+            detailHtml += `</tbody></table>`;
+            detailHtml += `<button class="back-button">Zurück zur Übersicht</button>`;
+            detailHtml += `</div>`;
+
+            if (overviewSection) overviewSection.style.display = 'none';
+            detailsContainer.innerHTML = detailHtml;
+            detailsContainer.style.display = 'block';
+            
+            detailsContainer.querySelector('.back-button').addEventListener('click', hidePositionDetails);
+            window.scrollTo(0, 0);
+        }
+
+        function hidePositionDetails() {
+            const overviewSection = document.querySelector('.positions-overview');
+            const detailsContainer = document.getElementById('details-section-container');
+            
+            if (detailsContainer) detailsContainer.style.display = 'none';
+            if (overviewSection) overviewSection.style.display = 'flex'; // Oder 'block', je nachdem wie es gestyled war
         }
 
         window.onload = loadAndDisplayFees;
