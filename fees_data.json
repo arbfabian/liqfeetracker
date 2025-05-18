@@ -3,7 +3,7 @@
     "token_pair_symbols": "WBTC/WETH",
     "initial_investment_usd": 1042.0,
     "is_active": true,
-    "last_updated_utc": "2025-05-17T23:59:59Z", // Aktualisiert auf den 17. Mai
+    "last_updated_utc": "2025-05-17T23:59:59Z",
     "history": {
       "2025-05-12": {
         "total_unclaimed_fees": {
@@ -101,7 +101,6 @@
           "total_usd": 1.449001998519316
         }
       }
-      // Eintrag für 2025-05-18 wurde entfernt
     }
   }
 }
