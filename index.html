@@ -25,14 +25,12 @@
         .position-summary-card {
             border: 1px solid #ccc; padding: 15px 20px; border-radius: 8px; background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-            width: 340px; /* Leicht angepasst für Zentrierung */
+            width: 340px; 
             text-align: left; display: flex; flex-direction: column;
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             opacity: 0; animation: fadeIn 0.6s ease-out forwards;
         }
-        .positions-overview .position-summary-card:nth-child(1), .positions-archive .position-summary-card:nth-child(1) { animation-delay: 0.3s; }
-        .positions-overview .position-summary-card:nth-child(2), .positions-archive .position-summary-card:nth-child(2) { animation-delay: 0.45s; }
-        /* ... (weitere nth-child delays falls nötig) ... */
+        /* ... (nth-child delays) ... */
 
         .position-summary-card:hover {
             transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.15);
@@ -47,22 +45,23 @@
         .position-summary-card p strong { color: #555; }
         .position-summary-card p small.sub-info { font-size: 0.8em; color: #777; }
 
-        /* --- Stile für Range Visualisierung & letzte Gebühren (mit Zentrierung) --- */
+        /* --- Stile für Range Visualisierung & letzte Gebühren (VERSUCH 3 ZENTRIERUNG) --- */
         .range-and-recent-fees {
             margin-top: 10px;
             margin-bottom: 10px; 
             border-top: 1px solid #eee;
             padding-top: 10px;
-            text-align: center; /* Hauptzentrierung für diesen Block */
+            text-align: center !important; /* Erzwinge Zentrierung für Inline-Kinder */
+            display: flex; /* Versuche Flexbox für Zentrierung von Block-Kindern */
+            flex-direction: column; /* Kinder untereinander */
+            align-items: center; /* Zentriert Flex-Kinder horizontal */
         }
 
         .price-range-visualizer {
             width: 90%; 
             max-width: 280px; 
-            /* height: auto; /* Höhe wird durch Inhalt bestimmt */
             margin-bottom: 8px;
-            margin-left: auto; 
-            margin-right: auto; /* Zentriert den Block selbst */
+            /* margin-left: auto; margin-right: auto; /* Sollte durch align-items: center im Parent erledigt sein */
         }
         .price-range-visualizer svg {
             display: block; width: 100%; height: 100%;
@@ -70,30 +69,37 @@
         .range-labels {
             display: flex; justify-content: space-between; font-size: 0.7em;
             color: #555; margin-top: -8px; padding: 0 5px;
+            width: 100%; /* Stelle sicher, dass es die Breite des Visualizers einnimmt */
         }
         .price-range-visualizer .range-data-unavailable, 
         .price-range-visualizer .invalid-range { 
-            font-size:0.8em; text-align:center; color:#777; line-height: 40px; /* Höhe des SVG-Bereichs */
+            font-size:0.8em; text-align:center !important; color:#777; line-height: 40px; 
+            width: 100%; /* Volle Breite des Visualizers */
         }
         .price-range-visualizer .current-price-label {
-             font-size:0.75em; text-align:center; margin-top:2px;
+             font-size:0.75em; text-align:center !important; margin-top:2px;
+             width: 100%; /* Volle Breite des Visualizers */
         }
 
         .update-timestamp { 
             font-size: 0.8em; color: #777;
-            text-align: center; 
+            text-align: center !important; 
             margin-bottom: 5px;
+            width: 100%; /* Nimm volle Breite, um Zentrierung zu ermöglichen, wenn es ein Flex-Item ist */
         }
 
         .recent-fees-summary {
             font-size: 0.8em;
             color: #555;
-            margin-top: 15px; /* Etwas mehr Abstand nach oben */
-            /* text-align: center; wird von .range-and-recent-fees geerbt */
+            margin-top: 15px; 
+            width: 100%; /* Nimm volle Breite */
+            text-align: center !important; /* Zentriere Text innerhalb dieses Blocks */
         }
+        /* Die einzelnen p-Tags in recent-fees-summary sollten jetzt durch den Parent zentriert werden. */
+        /* Falls nicht, wäre der nächste Schritt, sie auch zu Flex-Items zu machen oder display:inline-block */
         .recent-fees-summary p { 
             margin: 4px 0; 
-            text-align: center; /* Stellt sicher, dass auch diese zentriert sind */
+            /* text-align: center !important; /* Als letzte Instanz */
         }
         .recent-fees-summary strong { color: #333; }
         /* --- ENDE Stile für Range Visualisierung --- */
@@ -113,28 +119,7 @@
         .active-position { border-left: 5px solid #27ae60; }
         .active-position h2 { color: #27ae60; }
 
-        .position-block { /* Stile für Detailansicht */
-            border: 1px solid #ccc; padding: 20px; margin-bottom: 25px;
-            border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            opacity: 0; animation: fadeInDetail 0.4s ease-out forwards;
-        }
-        .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #e8eff5; color: #2c3e50; font-weight: bold; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        
-        #data-container p.error-message { color: red; font-weight: bold; text-align:center; }
-        #data-container p.loading-message { text-align: center; font-size: 1.1em; }
-
-        .section-container {
-            transition: opacity 0.4s ease-in-out, max-height 0.4s ease-in-out;
-            overflow: hidden;
-        }
-        .section-hidden { opacity: 0; max-height: 0px !important; pointer-events: none; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeInDetail { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        /* ... (Rest deines CSS und HTML/JS bleibt gleich wie im vorherigen Post) ... */
     </style>
 </head>
 <body>
@@ -144,6 +129,11 @@
     </div>
 
     <script>
+        // DEIN GESAMTER JAVASCRIPT-CODE VON VORHER HIER EINFÜGEN
+        // (createPriceRangeVisualizer, loadAndDisplayFees, showPositionDetails, hidePositionDetails)
+        // Ich lasse ihn hier weg, um die Antwort kürzer zu halten, aber er muss natürlich da sein.
+        // Wichtig: Der JS-Code selbst wird NICHT geändert, nur das CSS.
+
         let overviewSectionGlobalRef, archiveSectionGlobalRef, detailsContainerGlobalRef;
 
         function createPriceRangeVisualizer(rangeData) { 
