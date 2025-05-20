@@ -24,7 +24,8 @@
 
         .position-summary-card {
             border: 1px solid #ccc; padding: 15px 20px; border-radius: 8px; background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 350px; /* Etwas breiter für neue Elemente */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            width: 340px; /* Leicht angepasst für Zentrierung */
             text-align: left; display: flex; flex-direction: column;
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             opacity: 0; animation: fadeIn 0.6s ease-out forwards;
@@ -41,51 +42,60 @@
             margin-top: 0; font-size: 1.15em; color: #34495e;
             border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;
         }
-        .position-summary-card .card-content { flex-grow: 1; /* Wichtig, damit Button unten bleibt */}
+        .position-summary-card .card-content { flex-grow: 1; }
         .position-summary-card p { margin: 6px 0; font-size: 0.9em; line-height: 1.4; }
         .position-summary-card p strong { color: #555; }
         .position-summary-card p small.sub-info { font-size: 0.8em; color: #777; }
 
-        /* --- NEUE STILE für Range Visualisierung & letzte Gebühren --- */
+        /* --- Stile für Range Visualisierung & letzte Gebühren (mit Zentrierung) --- */
         .range-and-recent-fees {
             margin-top: 10px;
-            margin-bottom: 10px; /* Platz vor dem Button */
+            margin-bottom: 10px; 
             border-top: 1px solid #eee;
             padding-top: 10px;
+            text-align: center; /* Hauptzentrierung für diesen Block */
         }
         .price-range-visualizer {
-            width: 100%;
-            height: 40px; /* Höhe des SVG-Bereichs */
+            width: 90%; /* Etwas schmaler, damit es mit zentriertem Text gut aussieht */
+            max-width: 280px; /* Maximale Breite für die Visualisierung */
+            height: 40px; 
             margin-bottom: 8px;
-            position: relative; /* Für absolute Positionierung des Textes */
+            position: relative; 
+            margin-left: auto; /* Zentriert den Block selbst, wenn er schmaler ist */
+            margin-right: auto;
         }
         .price-range-visualizer svg {
-            display: block;
-            width: 100%;
-            height: 100%;
+            display: block; width: 100%; height: 100%;
         }
-         /* Beschriftung unter der Range */
         .range-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.7em;
-            color: #555;
-            margin-top: -8px; /* Etwas näher an die Range ran */
-            padding: 0 5px; /* Kleiner Innenabstand */
+            display: flex; justify-content: space-between; font-size: 0.7em;
+            color: #555; margin-top: -8px; padding: 0 5px;
         }
+        .price-range-visualizer .range-data-unavailable, 
+        .price-range-visualizer .invalid-range { /* Gemeinsamer Stil für Nachrichten */
+            font-size:0.8em; text-align:center; color:#777; line-height: 40px; /* Zentriert vertikal */
+        }
+        .current-price-label { /* Klasse für die "Aktuell:" Beschriftung */
+             font-size:0.75em; text-align:center; margin-top:2px;
+        }
+
         .recent-fees-summary {
             font-size: 0.8em;
             color: #555;
             margin-top: 8px;
+            /* text-align: center; Bereits vom Parent geerbt */
         }
         .recent-fees-summary p { margin: 3px 0; }
         .recent-fees-summary strong { color: #333; }
-        /* --- ENDE NEUE STILE --- */
+        .update-timestamp { /* Klasse für "Letztes Update" */
+            font-size: 0.8em; color: #777;
+            text-align: center; 
+            margin-bottom: 5px;
+        }
+        /* --- ENDE Stile für Range Visualisierung --- */
 
         .details-button-container {
-            text-align: center; /* Zentriert den Button */
-            margin-top: auto; /* Schiebt den Button nach unten */
-            padding-top: 10px; /* Etwas Abstand nach oben */
+            text-align: center; margin-top: auto; padding-top: 10px;
         }
         .details-button, .back-button {
             background-color: #3498db; color: white; border: none; padding: 10px 15px;
@@ -132,72 +142,68 @@
     <script>
         let overviewSectionGlobalRef, archiveSectionGlobalRef, detailsContainerGlobalRef;
 
-        function createPriceRangeVisualizer(rangeData, width = 300, height = 40) {
+        function createPriceRangeVisualizer(rangeData) { // Breite und Höhe werden jetzt per CSS gesteuert
             if (!rangeData || rangeData.price_lower == null || rangeData.price_upper == null) {
-                return '<p style="font-size:0.8em; text-align:center; color:#777;">Range-Daten nicht verfügbar.</p>';
+                return '<p class="range-data-unavailable">Keine aktuellen Range-Daten.</p>';
             }
 
             const { price_lower, price_upper, current_market_price, base_token_for_price, quote_token_for_price } = rangeData;
             
-            // Sicherstellen, dass lower < upper
             const actual_lower = Math.min(price_lower, price_upper);
             const actual_upper = Math.max(price_lower, price_upper);
-
             const rangeSpan = actual_upper - actual_lower;
-            if (rangeSpan <= 0) return '<p style="font-size:0.8em; text-align:center; color:#777;">Ungültige Range.</p>';
 
-            // Padding für die Visualisierung, damit der aktuelle Preis auch außerhalb sichtbar ist
-            const paddingFactor = 0.15; // 15% padding auf jeder Seite der Range
+            if (rangeSpan <= 0 && (price_lower != null && price_upper != null)) { // Nur als ungültig markieren, wenn beide Preise da sind aber span <= 0
+                 return '<p class="invalid-range">Ungültige Range-Daten.</p>';
+            }
+            if (rangeSpan <= 0) { // Fallback, falls einer der Preise null ist, aber der andere nicht
+                return '<p class="range-data-unavailable">Unvollständige Range-Daten.</p>';
+            }
+
+
+            const paddingFactor = 0.15; 
             const padded_lower = actual_lower - rangeSpan * paddingFactor;
             const padded_upper = actual_upper + rangeSpan * paddingFactor;
             const displaySpan = padded_upper - padded_lower;
 
             let markerX = 0;
-            let markerColor = "#3498db"; // Blau für in Range
+            let markerColor = "#3498db"; 
             let isMarkerVisible = current_market_price != null;
 
             if (isMarkerVisible) {
                 markerX = ((current_market_price - padded_lower) / displaySpan) * 100;
-                markerX = Math.max(0, Math.min(100, markerX)); // Begrenze auf 0-100%
-
+                markerX = Math.max(0, Math.min(100, markerX)); 
                 if (current_market_price < actual_lower || current_market_price > actual_upper) {
-                    markerColor = "#e74c3c"; // Rot für außerhalb der Range
+                    markerColor = "#e74c3c"; 
                 }
             }
             
-            // X-Positionen für die eigentliche Range-Anzeige (nicht die gepaddete Skala)
             const rangeBarX = ((actual_lower - padded_lower) / displaySpan) * 100;
             const rangeBarWidth = (rangeSpan / displaySpan) * 100;
 
-            const svgHeight = 25; // Höhe der Balken etc.
+            const svgHeight = 25; 
             const priceLineY = svgHeight / 2;
-            const rangeBarHeight = 8; // Dicke der Range-Balken
-            const markerHeight = 16; // Höhe des Preis-Markers
+            const rangeBarHeight = 8; 
+            const markerHeight = 16; 
 
             let svg = `<svg viewBox="0 0 100 ${svgHeight}" preserveAspectRatio="none">`;
-            // Unterer Balken der Range
             svg += `<line x1="${rangeBarX}%" y1="${priceLineY + rangeBarHeight / 2}" x2="${rangeBarX + rangeBarWidth}%" y2="${priceLineY + rangeBarHeight / 2}" stroke="#333" stroke-width="2" />`;
-            // Oberer Balken der Range
             svg += `<line x1="${rangeBarX}%" y1="${priceLineY - rangeBarHeight / 2}" x2="${rangeBarX + rangeBarWidth}%" y2="${priceLineY - rangeBarHeight / 2}" stroke="#333" stroke-width="2" />`;
 
             if (isMarkerVisible) {
-                // Aktueller Preis Marker (vertikale Linie)
                 svg += `<line x1="${markerX}%" y1="${priceLineY - markerHeight / 2}" x2="${markerX}%" y2="${priceLineY + markerHeight / 2}" stroke="${markerColor}" stroke-width="2.5" />`;
             }
             svg += `</svg>`;
             
-            // Beschriftung hinzufügen
             svg += `<div class="range-labels">
                         <span>${actual_lower.toFixed(5)}</span>
                         <span>${actual_upper.toFixed(5)}</span>
                     </div>`;
             if(isMarkerVisible) {
-                 svg += `<div style="font-size:0.75em; text-align:center; color:${markerColor}; margin-top:2px;">Aktuell: ${current_market_price.toFixed(5)} ${quote_token_for_price}/${base_token_for_price}</div>`;
+                 svg += `<div class="current-price-label" style="color:${markerColor};">Aktuell: ${current_market_price.toFixed(5)} ${quote_token_for_price}/${base_token_for_price}</div>`;
             }
-
             return svg;
         }
-
 
         async function loadAndDisplayFees() {
             const dataContainer = document.getElementById('data-container');
@@ -248,35 +254,33 @@
                         daysOpenText = `${Math.ceil(Math.abs(end - firstEntry)/(1000*60*60*24)) + 1} Tag(e)`;
                     }
 
-                    // --- NEU: Range Visualisierung und letzte Gebühren ---
                     let rangeAndRecentFeesHtml = '<div class="range-and-recent-fees">';
-                    // Range Visualisierung
                     const latestDate = historyDates.length > 0 ? historyDates[0] : null;
-                    let rangeVisualizerHtml = '<p style="font-size:0.8em; text-align:center; color:#777;">Keine aktuellen Range-Daten.</p>';
+                    let rangeVisualizerHtml = '';
                     if (latestDate && posData.history[latestDate] && posData.history[latestDate].position_range) {
                         rangeVisualizerHtml = createPriceRangeVisualizer(posData.history[latestDate].position_range);
+                    } else {
+                        // Explizite Nachricht, wenn keine Range-Daten da sind, wird jetzt von createPriceRangeVisualizer gehandhabt
+                        rangeVisualizerHtml = createPriceRangeVisualizer(null); 
                     }
                     rangeAndRecentFeesHtml += `<div class="price-range-visualizer">${rangeVisualizerHtml}</div>`;
                     
-                    // "Letztes Update" über die Gebühren
-                    rangeAndRecentFeesHtml += `<p class="sub-info" style="text-align:center; margin-bottom: 5px;"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
+                    rangeAndRecentFeesHtml += `<p class="update-timestamp"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
 
-                    // Letzte 3 Gebühreneinnahmen
                     rangeAndRecentFeesHtml += '<div class="recent-fees-summary">';
-                    rangeAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px; text-align:center;">Letzte Gebühren:</p>';
+                    rangeAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px;">Letzte Gebühren:</p>';
                     const lastThreeFees = historyDates.slice(0, 3);
                     if (lastThreeFees.length > 0) {
                         lastThreeFees.forEach(date => {
                             const feeUsd = posData.history[date].daily_earned_fees?.total_usd;
                             if (feeUsd != null) {
-                                rangeAndRecentFeesHtml += `<p style="text-align:center;">${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
+                                rangeAndRecentFeesHtml += `<p>${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
                             }
                         });
                     } else {
-                        rangeAndRecentFeesHtml += '<p style="text-align:center;">Keine Gebührendaten.</p>';
+                        rangeAndRecentFeesHtml += '<p>Keine Gebührendaten.</p>';
                     }
                     rangeAndRecentFeesHtml += '</div></div>';
-                    // --- ENDE NEU ---
 
                     const isActive = posData.is_active === true;
                     let cardHtml = `
@@ -329,7 +333,6 @@
         }
 
         function showPositionDetails(positionData, positionIdKey) {
-            // ... (Rest deiner showPositionDetails Funktion bleibt gleich)
             const positionNumber = positionIdKey.replace('position_', '');
             let detailHtml = `<div class="position-block">`; 
             detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
