@@ -187,17 +187,44 @@ def main():
         # Gebühren
         collect_params = (position_nft_id, Web3.to_checksum_address(WALLET_ADDRESS), 2**128 - 1, 2**128 - 1)
         simulated_collect = nfpm_contract.functions.collect(collect_params).call({'from': Web3.to_checksum_address(WALLET_ADDRESS)})
-        unclaimed_fees_token0_actual = simulated_collect[0] / (10**token0_decimals)
+        
+        # Korrekte Definition und durchgehende Verwendung dieser Namen:
+        unclaimed_fees_token0_actual = simulated_collect[0] / (10**token0_decimals) 
         unclaimed_fees_token1_actual = simulated_collect[1] / (10**token1_decimals)
+        
         # (USD-Berechnung der Gebühren)
         price_token0_usd = get_single_token_price_coingecko(token0_address_checksum)
         price_token1_usd = get_single_token_price_coingecko(token1_address_checksum)
-        current_unclaimed_token0_usd_val, current_unclaimed_token1_usd_val, current_total_unclaimed_usd_val = None, None, None
-        if price_token0_usd: current_unclaimed_token0_usd_val = current_unclaimed_fees_token0_actual * price_token0_usd
-        if price_token1_usd: current_unclaimed_token1_usd_val = current_unclaimed_fees_token1_actual * price_token1_usd
-        if current_unclaimed_token0_usd_val and current_unclaimed_token1_usd_val: current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
-        elif current_unclaimed_token0_usd_val: current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
-        elif current_unclaimed_token1_usd_val: current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
+        
+        # Initialisierung der USD-Wert-Variablen
+        current_unclaimed_token0_usd_val = None
+        current_unclaimed_token1_usd_val = None
+        current_total_unclaimed_usd_val = None
+        
+        # Korrigierte Verwendung der Variablennamen und None-Check
+        if price_token0_usd is not None: 
+            current_unclaimed_token0_usd_val = unclaimed_fees_token0_actual * price_token0_usd 
+        if price_token1_usd is not None: 
+            current_unclaimed_token1_usd_val = unclaimed_fees_token1_actual * price_token1_usd
+        
+        # Logik für current_total_unclaimed_usd_val bleibt gleich,
+        # aber basiert auf den potenziell aktualisierten Werten oben.
+        if current_unclaimed_token0_usd_val is not None and current_unclaimed_token1_usd_val is not None:
+            current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
+        elif current_unclaimed_token0_usd_val is not None: # Nur Token0-Wert vorhanden
+            current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
+        elif current_unclaimed_token1_usd_val is not None: # Nur Token1-Wert vorhanden
+            current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
+        # Wenn beide None sind, bleibt current_total_unclaimed_usd_val None, was korrekt ist.
+
+        # Hier kannst du dann mit den `current_unclaimed_..._usd_val` und `current_total_unclaimed_usd_val`
+        # weiterarbeiten, um sie in `today_data_entry["total_unclaimed_fees"]` zu speichern.
+        # Zum Beispiel:
+        # print(f"  Total Unclaimed Fees (Simulated Collect):")
+        # print(f"    {current_token0_symbol}: {unclaimed_fees_token0_actual:.8f} (~${(current_unclaimed_token0_usd_val or 0.0):.2f})")
+        # print(f"    {current_token1_symbol}: {unclaimed_fees_token1_actual:.8f} (~${(current_unclaimed_token1_usd_val or 0.0):.2f})")
+        # if current_total_unclaimed_usd_val is not None:
+        #    print(f"    Total USD Value (Total Unclaimed): ${current_total_unclaimed_usd_val:.2f}")
 
         # NEU: Range-Preise und aktuellen Marktpreis ermitteln
         # Wähle, wie der Preis dargestellt werden soll:
