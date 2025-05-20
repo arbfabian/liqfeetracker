@@ -17,73 +17,81 @@
         }
 
         .positions-archive h2.archive-title {
-            width: 100%;
-            text-align: center;
-            font-size: 1.5em;
-            color: #7f8c8d;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #bdc3c7;
-            padding-bottom: 10px;
-            /* Für Fade-In */
-            opacity: 0;
-            animation: fadeIn 0.5s 0.2s ease-out forwards; /* Kleiner Delay für Titel */
+            width: 100%; text-align: center; font-size: 1.5em; color: #7f8c8d;
+            margin-bottom: 15px; border-bottom: 1px solid #bdc3c7; padding-bottom: 10px;
+            opacity: 0; animation: fadeIn 0.5s 0.2s ease-out forwards;
         }
 
         .position-summary-card {
-            border: 1px solid #ccc;
-            padding: 15px 20px;
-            border-radius: 8px;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 320px;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            /* Für Hover-Effekt und Fade-In */
+            border: 1px solid #ccc; padding: 15px 20px; border-radius: 8px; background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 350px; /* Etwas breiter für neue Elemente */
+            text-align: left; display: flex; flex-direction: column;
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            opacity: 0; /* Start für Fade-In */
-            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0; animation: fadeIn 0.6s ease-out forwards;
         }
-
-        /* Staggering für Fade-In der Karten */
         .positions-overview .position-summary-card:nth-child(1), .positions-archive .position-summary-card:nth-child(1) { animation-delay: 0.3s; }
         .positions-overview .position-summary-card:nth-child(2), .positions-archive .position-summary-card:nth-child(2) { animation-delay: 0.45s; }
-        .positions-overview .position-summary-card:nth-child(3), .positions-archive .position-summary-card:nth-child(3) { animation-delay: 0.6s; }
-        .positions-overview .position-summary-card:nth-child(4), .positions-archive .position-summary-card:nth-child(4) { animation-delay: 0.75s; }
-        /* Bei Bedarf weitere hinzufügen oder per JS dynamisch setzen */
-
+        /* ... (weitere nth-child delays falls nötig) ... */
 
         .position-summary-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
         .position-summary-card h2 {
-            margin-top: 0;
-            font-size: 1.15em;
-            color: #34495e;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            margin-top: 0; font-size: 1.15em; color: #34495e;
+            border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;
         }
+        .position-summary-card .card-content { flex-grow: 1; /* Wichtig, damit Button unten bleibt */}
         .position-summary-card p { margin: 6px 0; font-size: 0.9em; line-height: 1.4; }
         .position-summary-card p strong { color: #555; }
-        .position-summary-card p small { font-size: 0.8em; color: #777; }
+        .position-summary-card p small.sub-info { font-size: 0.8em; color: #777; }
 
+        /* --- NEUE STILE für Range Visualisierung & letzte Gebühren --- */
+        .range-and-recent-fees {
+            margin-top: 10px;
+            margin-bottom: 10px; /* Platz vor dem Button */
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .price-range-visualizer {
+            width: 100%;
+            height: 40px; /* Höhe des SVG-Bereichs */
+            margin-bottom: 8px;
+            position: relative; /* Für absolute Positionierung des Textes */
+        }
+        .price-range-visualizer svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+         /* Beschriftung unter der Range */
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7em;
+            color: #555;
+            margin-top: -8px; /* Etwas näher an die Range ran */
+            padding: 0 5px; /* Kleiner Innenabstand */
+        }
+        .recent-fees-summary {
+            font-size: 0.8em;
+            color: #555;
+            margin-top: 8px;
+        }
+        .recent-fees-summary p { margin: 3px 0; }
+        .recent-fees-summary strong { color: #333; }
+        /* --- ENDE NEUE STILE --- */
+
+        .details-button-container {
+            text-align: center; /* Zentriert den Button */
+            margin-top: auto; /* Schiebt den Button nach unten */
+            padding-top: 10px; /* Etwas Abstand nach oben */
+        }
         .details-button, .back-button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 0.9em;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: auto;
-            align-self: flex-start;
-            transition: background-color 0.2s ease-in-out; /* Button Hover-Effekt */
+            background-color: #3498db; color: white; border: none; padding: 10px 15px;
+            text-align: center; text-decoration: none; display: inline-block;
+            font-size: 0.9em; border-radius: 5px; cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
         }
         .details-button:hover, .back-button:hover { background-color: #2980b9; }
 
@@ -91,13 +99,10 @@
         .active-position { border-left: 5px solid #27ae60; }
         .active-position h2 { color: #27ae60; }
 
-        /* Stile für die Detailansicht */
-        .position-block {
+        .position-block { /* Stile für Detailansicht */
             border: 1px solid #ccc; padding: 20px; margin-bottom: 25px;
             border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            /* Für Fade-In der Detailansicht */
-            opacity: 0;
-            animation: fadeInDetail 0.4s ease-out forwards;
+            opacity: 0; animation: fadeInDetail 0.4s ease-out forwards;
         }
         .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; }
@@ -108,29 +113,14 @@
         #data-container p.error-message { color: red; font-weight: bold; text-align:center; }
         #data-container p.loading-message { text-align: center; font-size: 1.1em; }
 
-        /* Für sanften Übergang der Sektionen */
         .section-container {
-            transition: opacity 0.4s ease-in-out, max-height 0.4s ease-in-out; /* max-height für Slide-Effekt */
-            overflow: hidden; /* Wichtig für max-height Transition */
+            transition: opacity 0.4s ease-in-out, max-height 0.4s ease-in-out;
+            overflow: hidden;
         }
-        .section-hidden {
-            opacity: 0;
-            max-height: 0px !important; /* Wichtig !important, um initiale Höhe zu überschreiben */
-            /* visibility: hidden; /* Kann zu Sprüngen führen, max-height ist oft besser */
-            pointer-events: none; /* Verhindert Interaktion mit versteckten Elementen */
-        }
+        .section-hidden { opacity: 0; max-height: 0px !important; pointer-events: none; }
 
-
-        /* Keyframes für Fade-In */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInDetail { /* Eigene Animation für Detail, falls abweichend gewünscht */
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDetail { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -140,10 +130,74 @@
     </div>
 
     <script>
-        // Globale Referenzen für die Sektionen
-        let overviewSectionGlobalRef;
-        let archiveSectionGlobalRef;
-        let detailsContainerGlobalRef;
+        let overviewSectionGlobalRef, archiveSectionGlobalRef, detailsContainerGlobalRef;
+
+        function createPriceRangeVisualizer(rangeData, width = 300, height = 40) {
+            if (!rangeData || rangeData.price_lower == null || rangeData.price_upper == null) {
+                return '<p style="font-size:0.8em; text-align:center; color:#777;">Range-Daten nicht verfügbar.</p>';
+            }
+
+            const { price_lower, price_upper, current_market_price, base_token_for_price, quote_token_for_price } = rangeData;
+            
+            // Sicherstellen, dass lower < upper
+            const actual_lower = Math.min(price_lower, price_upper);
+            const actual_upper = Math.max(price_lower, price_upper);
+
+            const rangeSpan = actual_upper - actual_lower;
+            if (rangeSpan <= 0) return '<p style="font-size:0.8em; text-align:center; color:#777;">Ungültige Range.</p>';
+
+            // Padding für die Visualisierung, damit der aktuelle Preis auch außerhalb sichtbar ist
+            const paddingFactor = 0.15; // 15% padding auf jeder Seite der Range
+            const padded_lower = actual_lower - rangeSpan * paddingFactor;
+            const padded_upper = actual_upper + rangeSpan * paddingFactor;
+            const displaySpan = padded_upper - padded_lower;
+
+            let markerX = 0;
+            let markerColor = "#3498db"; // Blau für in Range
+            let isMarkerVisible = current_market_price != null;
+
+            if (isMarkerVisible) {
+                markerX = ((current_market_price - padded_lower) / displaySpan) * 100;
+                markerX = Math.max(0, Math.min(100, markerX)); // Begrenze auf 0-100%
+
+                if (current_market_price < actual_lower || current_market_price > actual_upper) {
+                    markerColor = "#e74c3c"; // Rot für außerhalb der Range
+                }
+            }
+            
+            // X-Positionen für die eigentliche Range-Anzeige (nicht die gepaddete Skala)
+            const rangeBarX = ((actual_lower - padded_lower) / displaySpan) * 100;
+            const rangeBarWidth = (rangeSpan / displaySpan) * 100;
+
+            const svgHeight = 25; // Höhe der Balken etc.
+            const priceLineY = svgHeight / 2;
+            const rangeBarHeight = 8; // Dicke der Range-Balken
+            const markerHeight = 16; // Höhe des Preis-Markers
+
+            let svg = `<svg viewBox="0 0 100 ${svgHeight}" preserveAspectRatio="none">`;
+            // Unterer Balken der Range
+            svg += `<line x1="${rangeBarX}%" y1="${priceLineY + rangeBarHeight / 2}" x2="${rangeBarX + rangeBarWidth}%" y2="${priceLineY + rangeBarHeight / 2}" stroke="#333" stroke-width="2" />`;
+            // Oberer Balken der Range
+            svg += `<line x1="${rangeBarX}%" y1="${priceLineY - rangeBarHeight / 2}" x2="${rangeBarX + rangeBarWidth}%" y2="${priceLineY - rangeBarHeight / 2}" stroke="#333" stroke-width="2" />`;
+
+            if (isMarkerVisible) {
+                // Aktueller Preis Marker (vertikale Linie)
+                svg += `<line x1="${markerX}%" y1="${priceLineY - markerHeight / 2}" x2="${markerX}%" y2="${priceLineY + markerHeight / 2}" stroke="${markerColor}" stroke-width="2.5" />`;
+            }
+            svg += `</svg>`;
+            
+            // Beschriftung hinzufügen
+            svg += `<div class="range-labels">
+                        <span>${actual_lower.toFixed(5)}</span>
+                        <span>${actual_upper.toFixed(5)}</span>
+                    </div>`;
+            if(isMarkerVisible) {
+                 svg += `<div style="font-size:0.75em; text-align:center; color:${markerColor}; margin-top:2px;">Aktuell: ${current_market_price.toFixed(5)} ${quote_token_for_price}/${base_token_for_price}</div>`;
+            }
+
+            return svg;
+        }
+
 
         async function loadAndDisplayFees() {
             const dataContainer = document.getElementById('data-container');
@@ -151,144 +205,134 @@
 
             try {
                 const response = await fetch('fees_data.json?v=' + new Date().getTime());
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status} - Konnte fees_data.json nicht laden.`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const allData = await response.json();
 
                 if (Object.keys(allData).filter(key => key.startsWith("position_")).length === 0) {
-                    dataContainer.innerHTML = '<p class="loading-message">Keine Positionsdaten gefunden.</p>';
-                    return;
+                    dataContainer.innerHTML = '<p class="loading-message">Keine Positionsdaten.</p>'; return;
                 }
 
-                let overviewHtml = '<div class="positions-overview section-container">'; // Klasse für Transition hinzugefügt
+                let overviewHtml = '<div class="positions-overview section-container">';
                 let archiveHtml = '<div class="positions-archive section-container"><h2 class="archive-title">Archivierte Positionen</h2>';
-                let hasActivePositions = false;
-                let hasArchivedPositions = false;
+                let hasActive = false, hasArchived = false;
 
-                const sortedPositionKeys = Object.keys(allData)
-                    .filter(key => key.startsWith("position_"))
-                    .sort((a, b) => {
-                        const aIsActive = allData[a].is_active === true;
-                        const bIsActive = allData[b].is_active === true;
-                        if (aIsActive && !bIsActive) return -1;
-                        if (!aIsActive && bIsActive) return 1;
-                        const dateA = allData[a].last_updated_utc ? new Date(allData[a].last_updated_utc) : 0;
-                        const dateB = allData[b].last_updated_utc ? new Date(allData[b].last_updated_utc) : 0;
-                        return dateB - dateA;
-                    });
+                const sortedPositionKeys = Object.keys(allData).filter(key => key.startsWith("position_"))
+                    .sort((a, b) => (allData[a].is_active === true && !(allData[b].is_active === true)) ? -1 : 
+                                   (!(allData[a].is_active === true) && allData[b].is_active === true) ? 1 : 
+                                   (new Date(allData[b].last_updated_utc || 0) - new Date(allData[a].last_updated_utc || 0)));
 
                 for (const positionIdKey of sortedPositionKeys) {
-                    const positionData = allData[positionIdKey];
-                    const positionNumber = positionIdKey.replace('position_', '');
-
+                    const posData = allData[positionIdKey];
+                    const posNum = positionIdKey.replace('position_', '');
                     let totalProfitUsd = 0;
-                    if (positionData.history && typeof positionData.history === 'object') {
-                        for (const date in positionData.history) {
-                            if (positionData.history.hasOwnProperty(date) &&
-                                positionData.history[date].daily_earned_fees &&
-                                positionData.history[date].daily_earned_fees.total_usd !== null &&
-                                positionData.history[date].daily_earned_fees.total_usd !== undefined) {
-                                totalProfitUsd += parseFloat(positionData.history[date].daily_earned_fees.total_usd);
-                            }
+                    const historyDates = posData.history ? Object.keys(posData.history).sort((a, b) => new Date(b) - new Date(a)) : [];
+
+                    historyDates.forEach(date => {
+                        const dayData = posData.history[date];
+                        if (dayData.daily_earned_fees && dayData.daily_earned_fees.total_usd != null) {
+                            totalProfitUsd += parseFloat(dayData.daily_earned_fees.total_usd);
                         }
+                    });
+
+                    let profitPercText = 'N/A';
+                    if (posData.initial_investment_usd && parseFloat(posData.initial_investment_usd) > 0) {
+                        const perc = (totalProfitUsd / parseFloat(posData.initial_investment_usd)) * 100;
+                        profitPercText = `<span style="color:${perc >= 0 ? 'green':'red'};">${perc.toFixed(2)}%</span>`;
                     }
 
-                    let profitPercentageText = 'N/A';
-                    if (positionData.initial_investment_usd && parseFloat(positionData.initial_investment_usd) > 0) {
-                        const profitPercentage = (totalProfitUsd / parseFloat(positionData.initial_investment_usd)) * 100;
-                        profitPercentageText = `<span style="color: ${profitPercentage >= 0 ? 'green' : 'red'};">${profitPercentage.toFixed(2)}%</span>`;
-                    } else if (positionData.hasOwnProperty('initial_investment_usd')) {
-                         profitPercentageText = 'Initialinv. fehlt/ungültig';
-                    }
-                    
                     let daysOpenText = 'N/A';
-                    if (positionData.history && typeof positionData.history === 'object' && Object.keys(positionData.history).length > 0) {
-                        const historyDates = Object.keys(positionData.history).sort((a, b) => new Date(a) - new Date(b));
-                        const firstEntryDate = new Date(historyDates[0]);
-                        const lastHistoryDateStr = historyDates[historyDates.length -1];
-                        const endDate = positionData.is_active === true ? new Date() : new Date(lastHistoryDateStr);
-                        
-                        endDate.setHours(0,0,0,0);
-                        firstEntryDate.setHours(0,0,0,0);
-
-                        const diffTime = Math.abs(endDate.getTime() - firstEntryDate.getTime());
-                        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                        if (Object.keys(positionData.history).length === 0) diffDays = 0;
-                        daysOpenText = `${diffDays} Tag(e)`;
+                    if (historyDates.length > 0) {
+                        const firstEntry = new Date(historyDates[historyDates.length - 1]);
+                        const end = posData.is_active === true ? new Date() : new Date(historyDates[0]);
+                        firstEntry.setHours(0,0,0,0); end.setHours(0,0,0,0);
+                        daysOpenText = `${Math.ceil(Math.abs(end - firstEntry)/(1000*60*60*24)) + 1} Tag(e)`;
                     }
 
-                    const isActive = positionData.is_active === true;
+                    // --- NEU: Range Visualisierung und letzte Gebühren ---
+                    let rangeAndRecentFeesHtml = '<div class="range-and-recent-fees">';
+                    // Range Visualisierung
+                    const latestDate = historyDates.length > 0 ? historyDates[0] : null;
+                    let rangeVisualizerHtml = '<p style="font-size:0.8em; text-align:center; color:#777;">Keine aktuellen Range-Daten.</p>';
+                    if (latestDate && posData.history[latestDate] && posData.history[latestDate].position_range) {
+                        rangeVisualizerHtml = createPriceRangeVisualizer(posData.history[latestDate].position_range);
+                    }
+                    rangeAndRecentFeesHtml += `<div class="price-range-visualizer">${rangeVisualizerHtml}</div>`;
+                    
+                    // "Letztes Update" über die Gebühren
+                    rangeAndRecentFeesHtml += `<p class="sub-info" style="text-align:center; margin-bottom: 5px;"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
+
+                    // Letzte 3 Gebühreneinnahmen
+                    rangeAndRecentFeesHtml += '<div class="recent-fees-summary">';
+                    rangeAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px; text-align:center;">Letzte Gebühren:</p>';
+                    const lastThreeFees = historyDates.slice(0, 3);
+                    if (lastThreeFees.length > 0) {
+                        lastThreeFees.forEach(date => {
+                            const feeUsd = posData.history[date].daily_earned_fees?.total_usd;
+                            if (feeUsd != null) {
+                                rangeAndRecentFeesHtml += `<p style="text-align:center;">${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
+                            }
+                        });
+                    } else {
+                        rangeAndRecentFeesHtml += '<p style="text-align:center;">Keine Gebührendaten.</p>';
+                    }
+                    rangeAndRecentFeesHtml += '</div></div>';
+                    // --- ENDE NEU ---
+
+                    const isActive = posData.is_active === true;
                     let cardHtml = `
                         <div class="position-summary-card ${isActive ? 'active-position' : 'archived-position'}" data-position-id="${positionIdKey}">
-                            <h2>Position ${positionNumber} ${isActive ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>
-                            <p><strong>Paar:</strong> ${positionData.token_pair_symbols || 'N/A'}</p>
-                            <p><strong>Gesamtprofit:</strong> <span style="color: ${totalProfitUsd >= 0 ? 'green' : 'red'}; font-weight: bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
-                            <p><strong>Profit %:</strong> ${profitPercentageText}</p>
-                            <p><strong>${isActive ? 'Offen seit' : 'Laufzeit'}:</strong> ${daysOpenText}</p>
-                            <p><small>Initial: ${positionData.initial_investment_usd ? parseFloat(positionData.initial_investment_usd).toFixed(2) + ' USD' : 'N/A'}</small></p>
-                            <p><small>Letztes Update: ${positionData.last_updated_utc ? new Date(positionData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>
-                            <button class="details-button">Details anzeigen</button>
-                        </div>
-                    `;
+                            <h2>Position ${posNum} ${isActive ? '' : '<small style="color:#7f8c8d;">(Archiv.)</small>'}</h2>
+                            <div class="card-content">
+                                <p><strong>Paar:</strong> ${posData.token_pair_symbols || 'N/A'}</p>
+                                <p><strong>Gesamtprofit:</strong> <span style="color:${totalProfitUsd >= 0 ? 'green':'red'}; font-weight:bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
+                                <p><strong>Profit %:</strong> ${profitPercText}</p>
+                                <p><strong>${isActive ? 'Offen seit':'Laufzeit'}:</strong> ${daysOpenText}</p>
+                                <p class="sub-info"><small>Initial: ${posData.initial_investment_usd ? parseFloat(posData.initial_investment_usd).toFixed(2) + ' USD':'N/A'}</small></p>
+                                ${rangeAndRecentFeesHtml}
+                            </div>
+                            <div class="details-button-container">
+                                <button class="details-button">Details anzeigen</button>
+                            </div>
+                        </div>`;
 
-                    if (isActive) {
-                        overviewHtml += cardHtml;
-                        hasActivePositions = true;
-                    } else {
-                        archiveHtml += cardHtml;
-                        hasArchivedPositions = true;
-                    }
+                    if (isActive) { overviewHtml += cardHtml; hasActive = true; }
+                    else { archiveHtml += cardHtml; hasArchived = true; }
                 }
-                overviewHtml += '</div>';
-                archiveHtml += '</div>';
+                overviewHtml += '</div>'; archiveHtml += '</div>';
 
                 let finalHtml = '';
-                if (hasActivePositions) {
-                    finalHtml += overviewHtml;
-                } else {
-                     finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen gefunden.</p></div>';
-                }
-
-                if (hasArchivedPositions) {
-                    finalHtml += archiveHtml;
-                }
+                if (hasActive) finalHtml += overviewHtml;
+                else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
+                if (hasArchived) finalHtml += archiveHtml;
                 
-                // Wichtig: Details-Container außerhalb der if/else Blöcke hinzufügen, aber initial versteckt
                 finalHtml += '<div id="details-section-container" class="section-container section-hidden"></div>';
                 dataContainer.innerHTML = finalHtml;
 
-                // Referenzen für späteres Ein-/Ausblenden setzen
                 overviewSectionGlobalRef = document.querySelector('.positions-overview');
                 archiveSectionGlobalRef = document.querySelector('.positions-archive');
                 detailsContainerGlobalRef = document.getElementById('details-section-container');
                 
-                // Set initial max-height for smooth transition (after elements are in DOM)
-                // We need to calculate the actual height or use a sufficiently large value if we don't hide it initially.
-                // For now, we start with overview/archive visible and details hidden.
                 if(overviewSectionGlobalRef) overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px";
-                if(archiveSectionGlobalRef && hasArchivedPositions) archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px";
-                if(detailsContainerGlobalRef) detailsContainerGlobalRef.style.maxHeight = "0px"; // Start hidden
-
+                if(archiveSectionGlobalRef && hasArchived) archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px";
+                if(detailsContainerGlobalRef) detailsContainerGlobalRef.style.maxHeight = "0px";
 
                 document.querySelectorAll('.details-button').forEach(button => {
                     button.addEventListener('click', function() {
-                        const posId = this.closest('.position-summary-card').dataset.positionId;
-                        showPositionDetails(allData[posId], posId);
+                        showPositionDetails(allData[this.closest('.position-summary-card').dataset.positionId], this.closest('.position-summary-card').dataset.positionId);
                     });
                 });
 
             } catch (error) {
-                console.error('Fehler beim Laden oder Verarbeiten der Daten:', error);
+                console.error('Fehler:', error);
                 dataContainer.innerHTML = `<p class="error-message">Fehler: ${error.message}</p>`;
             }
         }
 
         function showPositionDetails(positionData, positionIdKey) {
+            // ... (Rest deiner showPositionDetails Funktion bleibt gleich)
             const positionNumber = positionIdKey.replace('position_', '');
-            let detailHtml = `<div class="position-block">`; // position-block hat eigene FadeInDetail Animation
+            let detailHtml = `<div class="position-block">`; 
             detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
-            // ... (Rest der Detail HTML Erstellung wie gehabt) ...
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
             const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
@@ -301,52 +345,35 @@
                     const dayData = history[date];
                     if (dayData.daily_earned_fees) {
                         const earned = dayData.daily_earned_fees;
-                        const token0Earned = earned.token0_actual !== null && earned.token0_actual !== undefined ? parseFloat(earned.token0_actual).toFixed(8) : 'N/A';
-                        const token1Earned = earned.token1_actual !== null && earned.token1_actual !== undefined ? parseFloat(earned.token1_actual).toFixed(8) : 'N/A';
-                        const totalUSDEarned = earned.total_usd !== null && earned.total_usd !== undefined ? '$' + parseFloat(earned.total_usd).toFixed(2) : 'N/A';
+                        const token0Earned = earned.token0_actual != null ? parseFloat(earned.token0_actual).toFixed(8) : 'N/A';
+                        const token1Earned = earned.token1_actual != null ? parseFloat(earned.token1_actual).toFixed(8) : 'N/A';
+                        const totalUSDEarned = earned.total_usd != null ? '$' + parseFloat(earned.total_usd).toFixed(2) : 'N/A';
                         detailHtml += `<tr><td>${date}</td><td>${token0Earned}</td><td>${token1Earned}</td><td>${totalUSDEarned}</td></tr>`;
                     }
                 }
             } else {
-                detailHtml += `<tr><td colspan="4">Keine historischen Daten für diese Position gefunden.</td></tr>`;
+                detailHtml += `<tr><td colspan="4">Keine historischen Daten.</td></tr>`;
             }
             detailHtml += `</tbody></table>`;
             detailHtml += `<button class="back-button">Zurück zur Übersicht</button>`;
             detailHtml += `</div>`;
 
-
-            if (overviewSectionGlobalRef) {
-                overviewSectionGlobalRef.classList.add('section-hidden');
-                overviewSectionGlobalRef.style.maxHeight = "0px";
-            }
-            if (archiveSectionGlobalRef) {
-                archiveSectionGlobalRef.classList.add('section-hidden');
-                archiveSectionGlobalRef.style.maxHeight = "0px";
-            }
+            if (overviewSectionGlobalRef) { overviewSectionGlobalRef.classList.add('section-hidden'); overviewSectionGlobalRef.style.maxHeight = "0px"; }
+            if (archiveSectionGlobalRef) { archiveSectionGlobalRef.classList.add('section-hidden'); archiveSectionGlobalRef.style.maxHeight = "0px"; }
             
             detailsContainerGlobalRef.innerHTML = detailHtml;
             detailsContainerGlobalRef.classList.remove('section-hidden');
-            detailsContainerGlobalRef.style.maxHeight = detailsContainerGlobalRef.scrollHeight + "px"; // Set max-height to content height for transition
+            detailsContainerGlobalRef.style.maxHeight = detailsContainerGlobalRef.scrollHeight + "px"; 
             
             detailsContainerGlobalRef.querySelector('.back-button').addEventListener('click', hidePositionDetails);
             window.scrollTo(0, 0);
         }
 
         function hidePositionDetails() {
-            if (detailsContainerGlobalRef) {
-                detailsContainerGlobalRef.classList.add('section-hidden');
-                detailsContainerGlobalRef.style.maxHeight = "0px";
-            }
-            if (overviewSectionGlobalRef) {
-                overviewSectionGlobalRef.classList.remove('section-hidden');
-                 overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px";
-            }
-            if (archiveSectionGlobalRef && document.querySelector('.archived-position')) {
-                 archiveSectionGlobalRef.classList.remove('section-hidden');
-                 archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px";
-            }
+            if (detailsContainerGlobalRef) { detailsContainerGlobalRef.classList.add('section-hidden'); detailsContainerGlobalRef.style.maxHeight = "0px"; }
+            if (overviewSectionGlobalRef) { overviewSectionGlobalRef.classList.remove('section-hidden'); overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px"; }
+            if (archiveSectionGlobalRef && document.querySelector('.archived-position')) { archiveSectionGlobalRef.classList.remove('section-hidden'); archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px"; }
         }
-
         window.onload = loadAndDisplayFees;
     </script>
 </body>
