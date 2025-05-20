@@ -55,14 +55,14 @@
             padding-top: 10px;
             text-align: center; /* Hauptzentrierung für diesen Block */
         }
+
         .price-range-visualizer {
-            width: 90%; /* Etwas schmaler, damit es mit zentriertem Text gut aussieht */
-            max-width: 280px; /* Maximale Breite für die Visualisierung */
-            height: 40px; 
+            width: 90%; 
+            max-width: 280px; 
+            /* height: auto; /* Höhe wird durch Inhalt bestimmt */
             margin-bottom: 8px;
-            position: relative; 
-            margin-left: auto; /* Zentriert den Block selbst, wenn er schmaler ist */
-            margin-right: auto;
+            margin-left: auto; 
+            margin-right: auto; /* Zentriert den Block selbst */
         }
         .price-range-visualizer svg {
             display: block; width: 100%; height: 100%;
@@ -72,26 +72,30 @@
             color: #555; margin-top: -8px; padding: 0 5px;
         }
         .price-range-visualizer .range-data-unavailable, 
-        .price-range-visualizer .invalid-range { /* Gemeinsamer Stil für Nachrichten */
-            font-size:0.8em; text-align:center; color:#777; line-height: 40px; /* Zentriert vertikal */
+        .price-range-visualizer .invalid-range { 
+            font-size:0.8em; text-align:center; color:#777; line-height: 40px; /* Höhe des SVG-Bereichs */
         }
-        .current-price-label { /* Klasse für die "Aktuell:" Beschriftung */
+        .price-range-visualizer .current-price-label {
              font-size:0.75em; text-align:center; margin-top:2px;
+        }
+
+        .update-timestamp { 
+            font-size: 0.8em; color: #777;
+            text-align: center; 
+            margin-bottom: 5px;
         }
 
         .recent-fees-summary {
             font-size: 0.8em;
             color: #555;
-            margin-top: 8px;
-            /* text-align: center; Bereits vom Parent geerbt */
+            margin-top: 15px; /* Etwas mehr Abstand nach oben */
+            /* text-align: center; wird von .range-and-recent-fees geerbt */
         }
-        .recent-fees-summary p { margin: 3px 0; }
+        .recent-fees-summary p { 
+            margin: 4px 0; 
+            text-align: center; /* Stellt sicher, dass auch diese zentriert sind */
+        }
         .recent-fees-summary strong { color: #333; }
-        .update-timestamp { /* Klasse für "Letztes Update" */
-            font-size: 0.8em; color: #777;
-            text-align: center; 
-            margin-bottom: 5px;
-        }
         /* --- ENDE Stile für Range Visualisierung --- */
 
         .details-button-container {
@@ -142,7 +146,7 @@
     <script>
         let overviewSectionGlobalRef, archiveSectionGlobalRef, detailsContainerGlobalRef;
 
-        function createPriceRangeVisualizer(rangeData) { // Breite und Höhe werden jetzt per CSS gesteuert
+        function createPriceRangeVisualizer(rangeData) { 
             if (!rangeData || rangeData.price_lower == null || rangeData.price_upper == null) {
                 return '<p class="range-data-unavailable">Keine aktuellen Range-Daten.</p>';
             }
@@ -153,13 +157,12 @@
             const actual_upper = Math.max(price_lower, price_upper);
             const rangeSpan = actual_upper - actual_lower;
 
-            if (rangeSpan <= 0 && (price_lower != null && price_upper != null)) { // Nur als ungültig markieren, wenn beide Preise da sind aber span <= 0
+            if (rangeSpan <= 0 && (price_lower != null && price_upper != null)) { 
                  return '<p class="invalid-range">Ungültige Range-Daten.</p>';
             }
-            if (rangeSpan <= 0) { // Fallback, falls einer der Preise null ist, aber der andere nicht
+            if (rangeSpan <= 0) { 
                 return '<p class="range-data-unavailable">Unvollständige Range-Daten.</p>';
             }
-
 
             const paddingFactor = 0.15; 
             const padded_lower = actual_lower - rangeSpan * paddingFactor;
@@ -200,7 +203,7 @@
                         <span>${actual_upper.toFixed(5)}</span>
                     </div>`;
             if(isMarkerVisible) {
-                 svg += `<div class="current-price-label" style="color:${markerColor};">Aktuell: ${current_market_price.toFixed(5)} ${quote_token_for_price}/${base_token_for_price}</div>`;
+                 svg += `<div class="current-price-label" style="color:${markerColor};">Aktuell: ${current_market_price.toFixed(5)} ${quote_token_for_price || '?'}/${base_token_for_price || '?'}</div>`;
             }
             return svg;
         }
@@ -260,7 +263,6 @@
                     if (latestDate && posData.history[latestDate] && posData.history[latestDate].position_range) {
                         rangeVisualizerHtml = createPriceRangeVisualizer(posData.history[latestDate].position_range);
                     } else {
-                        // Explizite Nachricht, wenn keine Range-Daten da sind, wird jetzt von createPriceRangeVisualizer gehandhabt
                         rangeVisualizerHtml = createPriceRangeVisualizer(null); 
                     }
                     rangeAndRecentFeesHtml += `<div class="price-range-visualizer">${rangeVisualizerHtml}</div>`;
