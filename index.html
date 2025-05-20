@@ -268,12 +268,31 @@
                         profitPercText = `<span style="color:${perc >= 0 ? 'green':'red'};">${perc.toFixed(2)}%</span>`;
                     }
 
-                    let daysOpenText = 'N/A';
-                    if (historyDates.length > 0) {
-                        const firstEntry = new Date(historyDates[historyDates.length - 1]);
-                        const end = posData.is_active === true ? new Date() : new Date(historyDates[0]);
-                        firstEntry.setHours(0,0,0,0); end.setHours(0,0,0,0);
-                        daysOpenText = `${Math.ceil(Math.abs(end - firstEntry)/(1000*60*60*24)) + 1} Tag(e)`;
+                                        let daysOpenText = 'N/A';
+                    if (posData.history && typeof posData.history === 'object') {
+                        const historyDates = Object.keys(posData.history);
+                        if (historyDates.length > 0) {
+                            historyDates.sort((a, b) => new Date(a) - new Date(b));
+                            const firstEntryDate = new Date(historyDates[0]);
+                            
+                            const lastHistoryDateForArchive = new Date(historyDates[historyDates.length - 1]);
+                            const endDate = posData.is_active === true ? new Date() : lastHistoryDateForArchive;
+                            
+                            const startDateClean = new Date(firstEntryDate.getFullYear(), firstEntryDate.getMonth(), firstEntryDate.getDate());
+                            const endDateClean = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+                            const diffTime = endDateClean.getTime() - startDateClean.getTime();
+                            
+                            let calculatedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                            
+                            if (calculatedDays <= 0 && historyDates.length > 0) {
+                                calculatedDays = 1;
+                            }
+                            
+                            daysOpenText = `${calculatedDays} Tag(e)`;
+                        } else {
+                           daysOpenText = '0 Tag(e)';
+                        }
                     }
                     
                     const chartCanvasId = `priceChart_${positionIdKey}`;
