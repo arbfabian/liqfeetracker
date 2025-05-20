@@ -23,10 +23,16 @@
         }
 
         .position-summary-card {
-            border: 1px solid #ccc; padding: 15px 20px; border-radius: 8px; background-color: #fff;
+            border: 1px solid #ccc; 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
             width: 340px; 
-            text-align: left; display: flex; flex-direction: column;
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            text-align: center; 
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             animation: fadeIn 0.6s ease-out forwards;
         }
@@ -41,29 +47,41 @@
         }
 
         .position-summary-card h2 {
-            margin-top: 0; font-size: 1.15em; color: #34495e;
-            border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;
+            margin-top: 0; 
+            font-size: 1.15em; 
+            color: #34495e;
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 8px; 
+            margin-bottom: 12px;
+            width: 100%; 
+            text-align: center; 
         }
-        .position-summary-card .card-content { flex-grow: 1; }
-        .position-summary-card p { margin: 6px 0; font-size: 0.9em; line-height: 1.4; }
-        .position-summary-card p strong { color: #555; }
-        .position-summary-card p small.sub-info { font-size: 0.8em; color: #777; }
+        .position-summary-card .card-content { 
+            flex-grow: 1; 
+            width: 100%; 
+        }
+        
+        .position-summary-card .card-content > p {
+            /* Bleibt standardmäßig zentriert durch den Parent */
+        }
 
         .range-and-recent-fees {
             margin-top: 10px;
             margin-bottom: 10px; 
             border-top: 1px solid #eee;
             padding-top: 10px;
-            text-align: center !important; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            width: 100%; 
+            /* text-align: center; wird von .position-summary-card geerbt */
+            display: flex; /* Beibehaltung für interne Zentrierung von .price-range-visualizer etc. */
+            flex-direction: column;
+            align-items: center;
         }
 
         .price-range-visualizer {
             width: 90%; 
             max-width: 280px; 
             margin-bottom: 8px;
+            /* margin-left: auto & margin-right: auto; wird durch align-items im Parent erledigt */
         }
         .price-range-visualizer svg {
             display: block; width: 100%; height: 100%;
@@ -85,7 +103,7 @@
 
         .update-timestamp { 
             font-size: 0.8em; color: #777;
-            text-align: center !important; 
+            /* text-align: center; wird von .range-and-recent-fees geerbt */
             margin-bottom: 5px;
             width: 100%; 
         }
@@ -95,15 +113,19 @@
             color: #555;
             margin-top: 15px; 
             width: 100%; 
-            text-align: center !important; 
+            /* text-align: center; wird von .range-and-recent-fees geerbt */
         }
         .recent-fees-summary p { 
             margin: 4px 0; 
+             /* text-align: center; wird vom Parent geerbt */
         }
         .recent-fees-summary strong { color: #333; }
 
         .details-button-container {
-            text-align: center; margin-top: auto; padding-top: 10px;
+            text-align: center; 
+            margin-top: auto; 
+            padding-top: 10px;
+            width: 100%; 
         }
         .details-button, .back-button {
             background-color: #3498db; color: white; border: none; padding: 10px 15px;
@@ -155,6 +177,7 @@
     </div>
 
     <script>
+        // Dein gesamter JavaScript-Code hier (unverändert zur letzten funktionierenden Version)
         let overviewSectionGlobalRef, archiveSectionGlobalRef, detailsContainerGlobalRef;
 
         function createPriceRangeVisualizer(rangeData) { 
