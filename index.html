@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uniswap V3 LP Gebühren Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 30px;}
@@ -23,16 +24,11 @@
         }
 
         .position-summary-card {
-            border: 1px solid #ccc; 
-            padding: 15px 20px; 
-            border-radius: 8px; 
-            background-color: #fff;
+            border: 1px solid #ccc; padding: 15px 20px; border-radius: 8px; background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-            width: 340px; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            text-align: center; 
+            width: 360px; /* Etwas breiter für den Chart */
+            display: flex; flex-direction: column;
+            align-items: center; text-align: center; 
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             animation: fadeIn 0.6s ease-out forwards;
         }
@@ -41,91 +37,50 @@
         .positions-overview .position-summary-card:nth-child(3), .positions-archive .position-summary-card:nth-child(3) { animation-delay: 0.6s; }
         .positions-overview .position-summary-card:nth-child(4), .positions-archive .position-summary-card:nth-child(4) { animation-delay: 0.75s; }
 
-
         .position-summary-card:hover {
             transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
         .position-summary-card h2 {
-            margin-top: 0; 
-            font-size: 1.15em; 
-            color: #34495e;
-            border-bottom: 1px solid #eee; 
-            padding-bottom: 8px; 
-            margin-bottom: 12px;
-            width: 100%; 
-            text-align: center; 
+            margin-top: 0; font-size: 1.15em; color: #34495e;
+            border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;
+            width: 100%; text-align: center; 
         }
-        .position-summary-card .card-content { 
-            flex-grow: 1; 
+        .position-summary-card .card-content { flex-grow: 1; width: 100%; }
+        .position-summary-card .card-content > p { text-align: center; }
+        .position-summary-card p { margin: 6px 0; font-size: 0.9em; line-height: 1.4; }
+        .position-summary-card p strong { color: #555; }
+        .position-summary-card p small.sub-info { font-size: 0.8em; color: #777; }
+
+        .chart-and-recent-fees { /* Umbenannt von range-and-recent-fees */
+            margin-top: 10px; margin-bottom: 10px; 
+            border-top: 1px solid #eee; padding-top: 10px;
             width: 100%; 
+            display: flex; flex-direction: column; align-items: center; 
         }
-        
-        .position-summary-card .card-content > p {
-            /* Bleibt standardmäßig zentriert durch den Parent */
+        .price-chart-container { /* Neuer Container für den Chart */
+            width: 95%; /* Breite des Chart-Containers */
+            max-width: 320px; /* Maximale Breite */
+            height: 150px; /* Feste Höhe für den Chart auf der Karte */
+            margin-bottom: 10px;
+            position: relative; /* Für Chart.js oft nützlich */
+        }
+         .price-chart-container p { /* Für "Keine Daten"-Nachricht */
+            line-height: 150px; text-align: center; font-size: 0.8em; color: #777;
         }
 
-        .range-and-recent-fees {
-            margin-top: 10px;
-            margin-bottom: 10px; 
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-            width: 100%; 
-            /* text-align: center; wird von .position-summary-card geerbt */
-            display: flex; /* Beibehaltung für interne Zentrierung von .price-range-visualizer etc. */
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .price-range-visualizer {
-            width: 90%; 
-            max-width: 280px; 
-            margin-bottom: 8px;
-            /* margin-left: auto & margin-right: auto; wird durch align-items im Parent erledigt */
-        }
-        .price-range-visualizer svg {
-            display: block; width: 100%; height: 100%;
-        }
-        .range-labels {
-            display: flex; justify-content: space-between; font-size: 0.7em;
-            color: #555; margin-top: -8px; padding: 0 5px;
-            width: 100%; 
-        }
-        .price-range-visualizer .range-data-unavailable, 
-        .price-range-visualizer .invalid-range { 
-            font-size:0.8em; text-align:center !important; color:#777; line-height: 40px; 
-            width: 100%; 
-        }
-        .price-range-visualizer .current-price-label {
-             font-size:0.75em; text-align:center !important; margin-top:2px;
-             width: 100%; 
-        }
 
         .update-timestamp { 
-            font-size: 0.8em; color: #777;
-            /* text-align: center; wird von .range-and-recent-fees geerbt */
-            margin-bottom: 5px;
-            width: 100%; 
+            font-size: 0.8em; color: #777; text-align: center; margin-bottom: 5px; width: 100%; 
         }
-
         .recent-fees-summary {
-            font-size: 0.8em;
-            color: #555;
-            margin-top: 15px; 
-            width: 100%; 
-            /* text-align: center; wird von .range-and-recent-fees geerbt */
+            font-size: 0.8em; color: #555; margin-top: 10px; width: 100%; text-align: center; 
         }
-        .recent-fees-summary p { 
-            margin: 4px 0; 
-             /* text-align: center; wird vom Parent geerbt */
-        }
+        .recent-fees-summary p { margin: 4px 0; }
         .recent-fees-summary strong { color: #333; }
 
         .details-button-container {
-            text-align: center; 
-            margin-top: auto; 
-            padding-top: 10px;
-            width: 100%; 
+            text-align: center; margin-top: auto; padding-top: 10px; width: 100%; 
         }
         .details-button, .back-button {
             background-color: #3498db; color: white; border: none; padding: 10px 15px;
@@ -167,7 +122,6 @@
             from { opacity: 0; transform: scale(0.98); }
             to { opacity: 1; transform: scale(1); }
         }
-
     </style>
 </head>
 <body>
@@ -177,69 +131,100 @@
     </div>
 
     <script>
-        // Dein gesamter JavaScript-Code hier (unverändert zur letzten funktionierenden Version)
         let overviewSectionGlobalRef, archiveSectionGlobalRef, detailsContainerGlobalRef;
+        let activeCharts = {}; // Zum Speichern von Chart-Instanzen
 
-        function createPriceRangeVisualizer(rangeData) { 
-            if (!rangeData || rangeData.price_lower == null || rangeData.price_upper == null) {
-                return '<p class="range-data-unavailable">Keine aktuellen Range-Daten.</p>';
+        async function createPriceChart(canvasId, positionData) {
+            const chartCanvas = document.getElementById(canvasId);
+            if (!chartCanvas) {
+                console.error(`Canvas mit ID ${canvasId} nicht gefunden.`);
+                return;
             }
+            const ctx = chartCanvas.getContext('2d');
 
-            const { price_lower, price_upper, current_market_price, base_token_for_price, quote_token_for_price } = rangeData;
-            
-            const actual_lower = Math.min(price_lower, price_upper);
-            const actual_upper = Math.max(price_lower, price_upper);
-            const rangeSpan = actual_upper - actual_lower;
-
-            if (rangeSpan <= 0 && (price_lower != null && price_upper != null)) { 
-                 return '<p class="invalid-range">Ungültige Range-Daten.</p>';
-            }
-            if (rangeSpan <= 0) { 
-                return '<p class="range-data-unavailable">Unvollständige Range-Daten.</p>';
-            }
-
-            const paddingFactor = 0.15; 
-            const padded_lower = actual_lower - rangeSpan * paddingFactor;
-            const padded_upper = actual_upper + rangeSpan * paddingFactor;
-            const displaySpan = padded_upper - padded_lower;
-
-            let markerX = 0;
-            let markerColor = "#3498db"; 
-            let isMarkerVisible = current_market_price != null;
-
-            if (isMarkerVisible) {
-                markerX = ((current_market_price - padded_lower) / displaySpan) * 100;
-                markerX = Math.max(0, Math.min(100, markerX)); 
-                if (current_market_price < actual_lower || current_market_price > actual_upper) {
-                    markerColor = "#e74c3c"; 
+            try {
+                const priceTicksResponse = await fetch('price_ticks.json?v=' + new Date().getTime());
+                if (!priceTicksResponse.ok) {
+                    chartCanvas.outerHTML = "<p>Preisdaten-Datei (price_ticks.json) nicht geladen.</p>";
+                    console.error("Konnte price_ticks.json nicht laden", priceTicksResponse.status);
+                    return;
                 }
-            }
-            
-            const rangeBarX = ((actual_lower - padded_lower) / displaySpan) * 100;
-            const rangeBarWidth = (rangeSpan / displaySpan) * 100;
+                const allPriceTicks = await priceTicksResponse.json();
 
-            const svgHeight = 25; 
-            const priceLineY = svgHeight / 2;
-            const rangeBarHeight = 8; 
-            const markerHeight = 16; 
+                if (!Array.isArray(allPriceTicks)) {
+                     chartCanvas.outerHTML = "<p>Ungültiges Format der Preisdaten.</p>";
+                     console.error("price_ticks.json ist keine Liste.");
+                     return;
+                }
 
-            let svg = `<svg viewBox="0 0 100 ${svgHeight}" preserveAspectRatio="none">`;
-            svg += `<line x1="${rangeBarX}%" y1="${priceLineY + rangeBarHeight / 2}" x2="${rangeBarX + rangeBarWidth}%" y2="${priceLineY + rangeBarHeight / 2}" stroke="#333" stroke-width="2" />`;
-            svg += `<line x1="${rangeBarX}%" y1="${priceLineY - rangeBarHeight / 2}" x2="${rangeBarX + rangeBarWidth}%" y2="${priceLineY - rangeBarHeight / 2}" stroke="#333" stroke-width="2" />`;
+                let latestRange = null;
+                const historyDatesForRange = Object.keys(positionData.history || {}).sort((a,b) => new Date(b) - new Date(a));
+                if (historyDatesForRange.length > 0 && positionData.history[historyDatesForRange[0]].position_range) {
+                    latestRange = positionData.history[historyDatesForRange[0]].position_range;
+                }
 
-            if (isMarkerVisible) {
-                svg += `<line x1="${markerX}%" y1="${priceLineY - markerHeight / 2}" x2="${markerX}%" y2="${priceLineY + markerHeight / 2}" stroke="${markerColor}" stroke-width="2.5" />`;
+                const relevantPriceTicks = allPriceTicks.filter(tick => 
+                    latestRange && tick.base_token === latestRange.base_token_for_price &&
+                    tick.quote_token === latestRange.quote_token_for_price
+                );
+                
+                if (relevantPriceTicks.length === 0) {
+                    chartCanvas.outerHTML = "<p>Keine passenden Preisdaten für Chart.</p>";
+                    return;
+                }
+
+                const labels = relevantPriceTicks.map(tick => new Date(tick.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit'}));
+                const prices = relevantPriceTicks.map(tick => tick.price);
+
+                const chartData = {
+                    labels: labels,
+                    datasets: [{
+                        label: `Preis (${latestRange?.quote_token_for_price || '?'}/${latestRange?.base_token_for_price || '?'})`,
+                        data: prices,
+                        borderColor: 'rgb(54, 162, 235)', // Blau
+                        tension: 0.1,
+                        pointRadius: 1,
+                        borderWidth: 1.5
+                    }]
+                };
+
+                if (latestRange && latestRange.price_lower != null && latestRange.price_upper != null) {
+                    const rangeColor = 'rgba(255, 99, 132, 0.5)'; // Rot für Range
+                    chartData.datasets.push({
+                        label: 'Untere Range',
+                        data: Array(labels.length).fill(Math.min(latestRange.price_lower, latestRange.price_upper)),
+                        borderColor: rangeColor,
+                        borderDash: [5, 5],
+                        pointRadius: 0, borderWidth: 1, fill: false, order: 1
+                    });
+                    chartData.datasets.push({
+                        label: 'Obere Range',
+                        data: Array(labels.length).fill(Math.max(latestRange.price_lower, latestRange.price_upper)),
+                        borderColor: rangeColor,
+                        borderDash: [5, 5],
+                        pointRadius: 0, borderWidth: 1,
+                        fill: '-1', 
+                        backgroundColor: 'rgba(255, 99, 132, 0.05)', 
+                        order: 0
+                    });
+                }
+
+                const config = {
+                    type: 'line', data: chartData,
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { x: { ticks: { maxRotation: 0, minRotation: 0, autoSkip: true, maxTicksLimit: 6 } }, y: { beginAtZero: false } },
+                        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
+                    }
+                };
+                
+                if (activeCharts[canvasId]) { activeCharts[canvasId].destroy(); }
+                activeCharts[canvasId] = new Chart(ctx, config);
+
+            } catch (error) {
+                console.error(`Fehler beim Erstellen des Charts ${canvasId}:`, error);
+                chartCanvas.outerHTML = "<p>Fehler beim Laden der Chartdaten.</p>";
             }
-            svg += `</svg>`;
-            
-            svg += `<div class="range-labels">
-                        <span>${actual_lower.toFixed(5)}</span>
-                        <span>${actual_upper.toFixed(5)}</span>
-                    </div>`;
-            if(isMarkerVisible) {
-                 svg += `<div class="current-price-label" style="color:${markerColor};">Aktuell: ${current_market_price.toFixed(5)} ${quote_token_for_price || '?'}/${base_token_for_price || '?'}</div>`;
-            }
-            return svg;
         }
 
         async function loadAndDisplayFees() {
@@ -290,33 +275,27 @@
                         firstEntry.setHours(0,0,0,0); end.setHours(0,0,0,0);
                         daysOpenText = `${Math.ceil(Math.abs(end - firstEntry)/(1000*60*60*24)) + 1} Tag(e)`;
                     }
-
-                    let rangeAndRecentFeesHtml = '<div class="range-and-recent-fees">';
-                    const latestDate = historyDates.length > 0 ? historyDates[0] : null;
-                    let rangeVisualizerHtml = '';
-                    if (latestDate && posData.history[latestDate] && posData.history[latestDate].position_range) {
-                        rangeVisualizerHtml = createPriceRangeVisualizer(posData.history[latestDate].position_range);
-                    } else {
-                        rangeVisualizerHtml = createPriceRangeVisualizer(null); 
-                    }
-                    rangeAndRecentFeesHtml += `<div class="price-range-visualizer">${rangeVisualizerHtml}</div>`;
                     
-                    rangeAndRecentFeesHtml += `<p class="update-timestamp"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
+                    const chartCanvasId = `priceChart_${positionIdKey}`;
+                    let chartAndRecentFeesHtml = '<div class="chart-and-recent-fees">'; // Umbenannt
+                    chartAndRecentFeesHtml += `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>`;
+                    
+                    chartAndRecentFeesHtml += `<p class="update-timestamp"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
 
-                    rangeAndRecentFeesHtml += '<div class="recent-fees-summary">';
-                    rangeAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px;">Letzte Gebühren:</p>';
+                    chartAndRecentFeesHtml += '<div class="recent-fees-summary">';
+                    chartAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px;">Letzte Gebühren:</p>';
                     const lastThreeFees = historyDates.slice(0, 3);
                     if (lastThreeFees.length > 0) {
                         lastThreeFees.forEach(date => {
                             const feeUsd = posData.history[date].daily_earned_fees?.total_usd;
                             if (feeUsd != null) {
-                                rangeAndRecentFeesHtml += `<p>${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
+                                chartAndRecentFeesHtml += `<p>${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
                             }
                         });
                     } else {
-                        rangeAndRecentFeesHtml += '<p>Keine Gebührendaten.</p>';
+                        chartAndRecentFeesHtml += '<p>Keine Gebührendaten.</p>';
                     }
-                    rangeAndRecentFeesHtml += '</div></div>';
+                    chartAndRecentFeesHtml += '</div></div>';
 
                     const isActive = posData.is_active === true;
                     let cardHtml = `
@@ -328,7 +307,7 @@
                                 <p><strong>Profit %:</strong> ${profitPercText}</p>
                                 <p><strong>${isActive ? 'Offen seit':'Laufzeit'}:</strong> ${daysOpenText}</p>
                                 <p class="sub-info"><small>Initial: ${posData.initial_investment_usd ? parseFloat(posData.initial_investment_usd).toFixed(2) + ' USD':'N/A'}</small></p>
-                                ${rangeAndRecentFeesHtml}
+                                ${chartAndRecentFeesHtml}
                             </div>
                             <div class="details-button-container">
                                 <button class="details-button">Details anzeigen</button>
@@ -347,6 +326,16 @@
                 
                 finalHtml += '<div id="details-section-container" class="section-container section-hidden"></div>';
                 dataContainer.innerHTML = finalHtml;
+
+                // Charts erstellen, nachdem die Canvas-Elemente im DOM sind
+                if(hasActive){
+                    sortedPositionKeys.forEach(key => {
+                        if(allData[key].is_active === true){
+                            createPriceChart(`priceChart_${key}`, allData[key]);
+                        }
+                    });
+                }
+
 
                 overviewSectionGlobalRef = document.querySelector('.positions-overview');
                 archiveSectionGlobalRef = document.querySelector('.positions-archive');
@@ -372,6 +361,10 @@
             const positionNumber = positionIdKey.replace('position_', '');
             let detailHtml = `<div class="position-block">`; 
             detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
+            
+            // Platz für einen größeren Chart in der Detailansicht (optional)
+            // detailHtml += `<div style="height: 300px; margin-bottom:20px;"><canvas id="detailPriceChart_${positionIdKey}"></canvas></div>`;
+
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
             const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
@@ -404,6 +397,9 @@
             detailsContainerGlobalRef.classList.remove('section-hidden');
             detailsContainerGlobalRef.style.maxHeight = detailsContainerGlobalRef.scrollHeight + "px"; 
             
+            // Optional: Größeren Chart in Detailansicht erstellen
+            // createPriceChart(`detailPriceChart_${positionIdKey}`, positionData, true /* isDetailView = true, für andere Optionen */);
+
             detailsContainerGlobalRef.querySelector('.back-button').addEventListener('click', hidePositionDetails);
             window.scrollTo(0, 0);
         }

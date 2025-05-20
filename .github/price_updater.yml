@@ -1,0 +1,39 @@
+name: Update Price Ticks
+
+on:
+  schedule:
+    # Läuft alle 30 Minuten
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Erlaubt manuelles Starten
+
+jobs:
+  update_price:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x' # Oder spezifische Version wie 3.9, 3.10
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-dotenv web3 requests
+
+      - name: Run price updater script
+        env:
+          ARBITRUM_RPC: ${{ secrets.ARBITRUM_RPC }}
+          # WALLET_ADDRESS wird hier nicht zwingend benötigt, aber schadet nicht
+        run: python price_updater.py
+
+      - name: Commit and push if price_ticks.json changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated price tick update"
+          file_pattern: price_ticks.json # Nur diese Datei committen
+          commit_user_name: GitHub Actions Price Bot
+          commit_user_email: actions@github.com
+          commit_author: GitHub Actions Price Bot <actions@github.com>
