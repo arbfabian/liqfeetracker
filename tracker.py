@@ -230,7 +230,7 @@ def main():
         # Wähle, wie der Preis dargestellt werden soll:
         # True: Preis von Token1 in Einheiten von Token0 (z.B. WETH pro WBTC)
         # False: Preis von Token0 in Einheiten von Token1 (z.B. WBTC pro WETH) -> Üblicher für WBTC/WETH
-        PRICE_PRESENTATION_IS_TOKEN0_BASE = False
+        PRICE_PRESENTATION_IS_TOKEN0_BASE = True
 
         # Stelle sicher, dass die Token-Reihenfolge für die Preisberechnung mit der UI übereinstimmt
         # Uniswap behandelt Token0/Token1 basierend auf ihren Adressen (sortiert).
