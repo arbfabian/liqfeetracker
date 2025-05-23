@@ -3,15 +3,17 @@ import json
 from datetime import datetime, timedelta, timezone
 from web3 import Web3
 from web3.exceptions import (
-    BadFunctionCallOutput, ContractLogicError, TransactionNotFound, TimeExhausted,
-    TooManyRequests, ValidationError, ContractCustomError
+    BadFunctionCallOutput, 
+    ContractLogicError, 
+    TooManyRequests, 
+    ContractCustomError
 )
 from dotenv import load_dotenv
 import math
 import shutil
 import tempfile
-import time
-import requests
+import time 
+import requests # Fehlte im vorherigen price_updater.py für allowed_exceptions
 
 load_dotenv()
 
@@ -35,32 +37,38 @@ ERC20_ABI_MINIMAL = json.loads("""
 ]
 """)
 
-def w3_call_with_retry(func, retries=3, delay=5, allowed_exceptions=None):
-    if allowed_exceptions is None:
-        allowed_exceptions = (
-            requests.exceptions.ConnectionError, requests.exceptions.Timeout, # Obwohl requests hier nicht direkt verwendet wird, sind die Fehlerklassen nützlich
-            ConnectionError, TimeoutError, TooManyRequests,
-        )
+def w3_call_with_retry(func, retries=3, delay=5):
+    retryable_exceptions = (
+        requests.exceptions.ConnectionError, 
+        requests.exceptions.Timeout,
+        ConnectionError, 
+        TimeoutError, 
+        TooManyRequests 
+    )
+    non_retryable_contract_errors = (
+        ContractLogicError, 
+        BadFunctionCallOutput, 
+        ContractCustomError
+    )
     for attempt in range(retries):
         try:
             return func()
-        except allowed_exceptions as e:
-            print(f"    Web3 call failed (Attempt {attempt + 1}/{retries}) with allowed error: {type(e).__name__} - {e}")
-            if attempt < retries - 1: 
+        except retryable_exceptions as e:
+            print(f"    Web3 call failed (Attempt {attempt + 1}/{retries}) with retryable error: {type(e).__name__} - {e}")
+            if attempt < retries - 1:
                 print(f"    Retrying in {delay} seconds...")
                 time.sleep(delay)
-            else: 
-                print(f"    All Web3 call retries failed for {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
-        except (ContractLogicError, BadFunctionCallOutput, ValidationError, ContractCustomError) as contract_err:
-            print(f"    Web3 contract related error (no retry): {type(contract_err).__name__} - {contract_err}")
+            else:
+                print(f"    All retries failed for {func.__name__ if hasattr(func, '__name__') else 'lambda function'} after retryable error.")
+        except non_retryable_contract_errors as e:
+            print(f"    Web3 contract error (no retry): {type(e).__name__} - {e}")
+            # raise e # Fehler weiterwerfen, um Workflow fehlschlagen zu lassen
             return None 
-        except Exception as e:
+        except Exception as e: 
             print(f"    Unexpected error during Web3 call (Attempt {attempt + 1}/{retries}): {type(e).__name__} - {e}")
-            if attempt < retries - 1: 
-                print(f"    Retrying in {delay} seconds for unexpected error...")
-                time.sleep(delay)
-            else: 
-                print(f"    All Web3 call retries failed after unexpected error for {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
+            if attempt == retries -1 :
+                 print(f"    Last attempt failed for unexpected error on {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
+            raise e 
     return None
 
 def load_json_data(filename=PRICE_TICKS_FILE):
@@ -118,8 +126,8 @@ def main():
     print(f"Aktive Position ID: {active_nft_id}")
 
     t0_dec, t1_dec = None, None
-    base_sym, quote_sym = "TOKEN1", "TOKEN0"
-    PRICE_BASE_IS_T0 = True 
+    base_sym, quote_sym = "TOKEN1", "TOKEN0" # Default, wird überschrieben
+    PRICE_BASE_IS_T0 = True # WETH/WBTC -> Base WBTC (token0), Quote WETH (token1)
 
     try:
         pool_c_tokens = w3.eth.contract(address=WETH_WBTC_005_POOL_ADDRESS_ARBITRUM, abi=UNISWAP_V3_POOL_ABI_MINIMAL)
@@ -160,7 +168,7 @@ def main():
         if slot0 is None: raise Exception(f"Konnte slot0 vom Pool {WETH_WBTC_005_POOL_ADDRESS_ARBITRUM} nicht abrufen.")
         curr_mkt_price = sqrt_price_x96_to_price(slot0[0], t0_dec, t1_dec, PRICE_BASE_IS_T0)
         print(f"  Aktueller Marktpreis: {curr_mkt_price:.6f} {quote_sym}/{base_sym}")
-    except Exception as e: print(f"Fehler Abrufen Marktpreis: {e}"); return 
+    except Exception as e: print(f"Fehler Abrufen Marktpreis: {e}"); raise e # Fehler weiterwerfen
     if curr_mkt_price is None: print("Marktpreis nicht ermittelt. Kein Update."); return
 
     new_entry = {"timestamp":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"), "price":curr_mkt_price, "base_token":base_sym, "quote_token":quote_sym}

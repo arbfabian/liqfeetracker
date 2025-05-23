@@ -3,15 +3,20 @@ import json
 from datetime import datetime, timedelta, timezone
 from web3 import Web3
 from web3.exceptions import (
-    BadFunctionCallOutput, ContractLogicError, TransactionNotFound, TimeExhausted,
-    TooManyRequests, ValidationError, ContractCustomError
+    BadFunctionCallOutput, 
+    ContractLogicError, 
+    # TransactionNotFound, # Für .call() meist nicht relevant
+    # TimeExhausted, # Für .call() meist nicht relevant
+    TooManyRequests, 
+    ContractCustomError
+    # ValidationError ENTFERNT, da es den ImportError verursacht
 )
 from dotenv import load_dotenv
 import requests
 import math
 import shutil
 import tempfile
-import time # Hinzugefügt für Retries
+import time 
 
 load_dotenv()
 
@@ -42,35 +47,41 @@ UNISWAP_V3_POOL_ABI_MINIMAL = json.loads("""
 ]
 """)
 
-def w3_call_with_retry(func, retries=3, delay=5, allowed_exceptions=None):
-    if allowed_exceptions is None:
-        allowed_exceptions = (
-            requests.exceptions.ConnectionError, requests.exceptions.Timeout,
-            ConnectionError, TimeoutError, TooManyRequests,
-        )
+def w3_call_with_retry(func, retries=3, delay=5):
+    retryable_exceptions = (
+        requests.exceptions.ConnectionError, 
+        requests.exceptions.Timeout,
+        ConnectionError, 
+        TimeoutError, 
+        TooManyRequests 
+    )
+    non_retryable_contract_errors = (
+        ContractLogicError, 
+        BadFunctionCallOutput, 
+        ContractCustomError
+    )
     for attempt in range(retries):
         try:
             return func()
-        except allowed_exceptions as e:
-            print(f"    Web3 call failed (Attempt {attempt + 1}/{retries}) with allowed error: {type(e).__name__} - {e}")
-            if attempt < retries - 1: 
+        except retryable_exceptions as e:
+            print(f"    Web3 call failed (Attempt {attempt + 1}/{retries}) with retryable error: {type(e).__name__} - {e}")
+            if attempt < retries - 1:
                 print(f"    Retrying in {delay} seconds...")
                 time.sleep(delay)
-            else: 
-                print(f"    All Web3 call retries failed for {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
-        except (ContractLogicError, BadFunctionCallOutput, ValidationError, ContractCustomError) as contract_err:
-            print(f"    Web3 contract related error (no retry): {type(contract_err).__name__} - {contract_err}")
+            else:
+                print(f"    All retries failed for {func.__name__ if hasattr(func, '__name__') else 'lambda function'} after retryable error.")
+        except non_retryable_contract_errors as e:
+            print(f"    Web3 contract error (no retry): {type(e).__name__} - {e}")
             return None 
-        except Exception as e:
+        except Exception as e: 
             print(f"    Unexpected error during Web3 call (Attempt {attempt + 1}/{retries}): {type(e).__name__} - {e}")
-            if attempt < retries - 1: 
-                print(f"    Retrying in {delay} seconds for unexpected error...")
-                time.sleep(delay)
-            else: 
-                print(f"    All Web3 call retries failed after unexpected error for {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
+            if attempt == retries -1 :
+                 print(f"    Last attempt failed for unexpected error on {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
+            # raise e # Fehler weiterwerfen, um Workflow fehlschlagen zu lassen, wenn gewünscht
     return None
 
 def load_json_data(filename=JSON_DATA_FILE):
+    # (Implementierung von load_json_data wie in deinem Code)
     if os.path.exists(filename):
         try:
             with open(filename, 'r', encoding='utf-8') as f:
@@ -84,6 +95,7 @@ def load_json_data(filename=JSON_DATA_FILE):
     return {}
 
 def save_json_data_safely(data, filename=JSON_DATA_FILE):
+    # (Implementierung von save_json_data_safely wie in meinem vorherigen Post)
     try:
         file_dir = os.path.dirname(os.path.abspath(filename))
         if not file_dir: 
@@ -111,6 +123,7 @@ def save_json_data_safely(data, filename=JSON_DATA_FILE):
                 print(f"  Fehler beim Löschen der temporären Datei {temp_filepath}: {e_remove}")
 
 def tick_to_price(tick, token0_decimals, token1_decimals, is_token0_base=True):
+    # (Implementierung wie in deinem Code)
     price_ratio = (1.0001 ** tick)
     if is_token0_base:
         return price_ratio / (10 ** (token1_decimals - token0_decimals))
@@ -118,6 +131,7 @@ def tick_to_price(tick, token0_decimals, token1_decimals, is_token0_base=True):
         return (1 / price_ratio) / (10 ** (token0_decimals - token1_decimals))
 
 def sqrt_price_x96_to_price(sqrt_price_x96, token0_decimals, token1_decimals, is_token0_base=True):
+    # (Implementierung wie in deinem Code)
     price_ratio = (sqrt_price_x96 / (2**96)) ** 2
     if is_token0_base:
         return price_ratio / (10 ** (token1_decimals - token0_decimals))
@@ -125,6 +139,7 @@ def sqrt_price_x96_to_price(sqrt_price_x96, token0_decimals, token1_decimals, is
         return (1 / price_ratio) / (10 ** (token0_decimals - token1_decimals))
 
 def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one", retries=3, delay=5):
+    # (Implementierung wie in deinem Code, mit Retries und time.sleep)
     checksum_address = Web3.to_checksum_address(contract_address)
     url = f"https://api.coingecko.com/api/v3/coins/{platform_id}/contract/{checksum_address}"
     for attempt in range(retries):
@@ -150,6 +165,7 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
     return None
 
 def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
+    # (Implementierung wie in deinem Code)
     try:
         if os.path.exists(filename):
             with open(filename, 'r', encoding='utf-8') as f:
@@ -168,14 +184,13 @@ def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
     except Exception as e: print(f"Fehler beim Lesen von '{filename}': {e}"); return None
 
 def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data, hours_to_check=24):
+    # (Implementierung wie in deinem Code)
     if not os.path.exists(price_ticks_filepath) or not position_range_data: return None
     if position_range_data.get("price_lower") is None or position_range_data.get("price_upper") is None: return None
-    
     price_lower = min(position_range_data["price_lower"], position_range_data["price_upper"])
     price_upper = max(position_range_data["price_lower"], position_range_data["price_upper"])
     range_base_token = position_range_data.get("base_token_for_price")
     range_quote_token = position_range_data.get("quote_token_for_price")
-
     all_price_ticks = []
     if os.path.exists(price_ticks_filepath):
         with open(price_ticks_filepath, 'r', encoding='utf-8') as f:
@@ -183,18 +198,14 @@ def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data
                 all_price_ticks = json.load(f)
                 if not isinstance(all_price_ticks, list): return None
             except json.JSONDecodeError: return None
-    else:
-        return None 
-
+    else: return None 
     now_utc = datetime.now(timezone.utc)
     cutoff_time_utc = now_utc - timedelta(hours=hours_to_check)
     relevant_ticks, ticks_in_range = 0, 0
-
     for tick_entry in all_price_ticks:
         try:
             if not all([tick_entry.get("timestamp"), tick_entry.get("price"), tick_entry.get("base_token"), tick_entry.get("quote_token")]): continue
             if tick_entry.get("base_token") != range_base_token or tick_entry.get("quote_token") != range_quote_token: continue
-            
             tick_dt = datetime.fromisoformat(tick_entry["timestamp"].replace("Z", "+00:00"))
             if tick_dt >= cutoff_time_utc:
                 relevant_ticks += 1
@@ -204,6 +215,10 @@ def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data
     return (ticks_in_range / relevant_ticks) * 100
 
 def main():
+    # (Rest deiner main Funktion, aber mit w3_call_with_retry für alle Web3-Aufrufe)
+    # (und save_json_data_safely am Ende)
+    # Beispiel für die Verwendung innerhalb von main(), wie im vorherigen Post gezeigt.
+    # ... (Anfang von main)
     print(f"--- Starting Uniswap V3 Fee Tracker ({datetime.now(timezone.utc).isoformat()}) ---")
     all_data = load_json_data(JSON_DATA_FILE)
 
