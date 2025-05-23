@@ -18,8 +18,8 @@
             max-width: 600px; 
             margin-left: auto;
             margin-right: auto;
-            animation: fadeIn 0.5s 0.1s ease-out forwards; /* Leichte Animation für diesen Block */
-            opacity: 0; /* Start für Fade-In */
+            animation: fadeIn 0.5s 0.1s ease-out forwards;
+            opacity: 0; 
         }
         #average-fees-summary h3 {
             margin-top:0; margin-bottom: 10px; color:#495057; font-size: 1.2em;
@@ -242,19 +242,27 @@
 
         async function createPriceChart(canvasId, positionData) {
             const chartCanvas = document.getElementById(canvasId);
-            if (!chartCanvas) { return; }
+            if (!chartCanvas) { 
+                console.error(`Canvas mit ID ${canvasId} nicht gefunden.`);
+                return; 
+            }
             const ctx = chartCanvas.getContext('2d');
 
             try {
                 const priceTicksResponse = await fetch('price_ticks.json?v=' + new Date().getTime());
                 if (!priceTicksResponse.ok) {
                     chartCanvas.parentElement.innerHTML = "<p>Preisdaten-Datei (price_ticks.json) nicht geladen.</p>";
+                    console.error("Konnte price_ticks.json nicht laden", priceTicksResponse.status);
                     return;
                 }
                 const allPriceTicks = await priceTicksResponse.json();
+                // DEBUG: Zeige alle geladenen Ticks
+                console.log(`DEBUG für ${canvasId} - Geladene allPriceTicks:`, JSON.parse(JSON.stringify(allPriceTicks))); 
+
 
                 if (!Array.isArray(allPriceTicks)) {
                      chartCanvas.parentElement.innerHTML = "<p>Ungültiges Format der Preisdaten.</p>";
+                     console.error("DEBUG: price_ticks.json ist keine Liste.");
                      return;
                 }
 
@@ -263,11 +271,16 @@
                 if (historyDatesForRange.length > 0 && positionData.history[historyDatesForRange[0]].position_range) {
                     latestRange = positionData.history[historyDatesForRange[0]].position_range;
                 }
+                // DEBUG: Zeige die Range-Daten
+                console.log(`DEBUG für ${canvasId} - Verwendete latestRange für Filterung:`, latestRange); 
 
                 const relevantPriceTicks = allPriceTicks.filter(tick => 
-                    latestRange && tick.base_token === latestRange.base_token_for_price &&
+                    latestRange && 
+                    tick.base_token === latestRange.base_token_for_price &&
                     tick.quote_token === latestRange.quote_token_for_price
                 );
+                // DEBUG: Zeige die gefilterten Ticks
+                console.log(`DEBUG für ${canvasId} - Gefilterte relevantPriceTicks:`, JSON.parse(JSON.stringify(relevantPriceTicks))); 
                 
                 if (relevantPriceTicks.length === 0) {
                     chartCanvas.parentElement.innerHTML = "<p>Keine passenden Preisdaten für Chart.</p>";
@@ -303,6 +316,10 @@
                         fill: '-1', backgroundColor: 'rgba(255, 99, 132, 0.05)', order: 0
                     });
                 }
+                
+                // DEBUG: Zeige Chart-Daten und Konfiguration
+                // console.log(`DEBUG für ${canvasId} - Chart Data für Chart.js:`, JSON.parse(JSON.stringify(chartData)));
+                // console.log(`DEBUG für ${canvasId} - Chart Config für Chart.js:`, JSON.parse(JSON.stringify(config))); // config wird erst unten definiert
 
                 const config = {
                     type: 'line', data: chartData,
@@ -312,13 +329,14 @@
                         plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
                     }
                 };
+                console.log(`DEBUG für ${canvasId} - Chart Config für Chart.js:`, JSON.parse(JSON.stringify(config))); // Jetzt ist config definiert
                 
                 if (activeCharts[canvasId]) { activeCharts[canvasId].destroy(); }
                 activeCharts[canvasId] = new Chart(ctx, config);
 
             } catch (error) {
                 console.error(`Fehler beim Erstellen des Charts ${canvasId}:`, error);
-                if (chartCanvas && chartCanvas.parentElement) { // Sicherstellen, dass parentElement existiert
+                if (chartCanvas && chartCanvas.parentElement) {
                     chartCanvas.parentElement.innerHTML = "<p>Fehler beim Laden der Chartdaten.</p>";
                 }
             }
