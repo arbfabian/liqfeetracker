@@ -1,0 +1,160 @@
+git status
+
+git log
+Erklärung: Zeigt die Commit-Historie deines aktuellen Branches an. Jeder Commit hat eine eindeutige "Hash"-ID, einen Autor, ein Datum und eine Commit-Nachricht.
+Optionen:
+
+git log --oneline: Kompakte einzeilige Ansicht.
+git log --graph --oneline --decorate --all: Eine sehr nützliche Ansicht, die alle Branches und deren Verknüpfungen grafisch darstellt.
+Wann verwenden: Um frühere Commits zu finden (z.B. für revert oder reset), um die Entwicklung nachzuvollziehen.
+Branches erstellen und wechseln
+
+git branch
+Erklärung: Ohne weitere Argumente listet dieser Befehl alle deine lokalen Branches auf. Der aktuell ausgecheckte Branch ist mit einem Sternchen * markiert.
+
+git branch <neuer-branch-name>: Erstellt einen neuen Branch, wechselt aber nicht dorthin.
+Wann verwenden: Um zu sehen, welche Branches existieren oder um einen neuen Branch zu erstellen, ohne direkt dorthin zu wechseln.
+
+git checkout <branch-name>
+Erklärung: Wechselt zum angegebenen Branch. Dein Arbeitsverzeichnis wird auf den Stand dieses Branches aktualisiert.
+Wann verwenden: Um zwischen verschiedenen Entwicklungszweigen zu wechseln.
+
+git checkout -b <neuer-branch-name>
+Erklärung: Eine Abkürzung, die zwei Schritte kombiniert:
+Erstellt einen neuen Branch (git branch <neuer-branch-name>).
+Wechselt sofort zu diesem neu erstellten Branch (git checkout <neuer-branch-name>).
+Wann verwenden: Das ist der häufigste Weg, um einen neuen Feature-Branch zu starten.
+
+Änderungen speichern (Committen)
+git add <dateiname> oder git add .
+git commit -m "Deine Commit-Nachricht"
+
+Mit Remote-Repositories arbeiten (z.B. GitHub)
+git pull oder git pull origin <branch-name>
+Erklärung: Holt die neuesten Änderungen vom Remote-Repository (z.B. GitHub) für den aktuellen Branch (oder den angegebenen Branch) und versucht, sie mit deinen lokalen Änderungen zusammenzuführen (merge). Es ist eine Kombination aus git fetch und git merge.
+Wann verwenden: Bevor du mit der Arbeit an einem Branch beginnst oder bevor du deine eigenen Änderungen pushst, um sicherzustellen, dass du auf dem neuesten Stand bist.
+
+git push oder git push origin <branch-name>
+Erklärung: Sendet deine lokalen Commits zum Remote-Repository (z.B. GitHub).
+git push -u origin <neuer-branch-name>: Beim ersten Pushen eines neuen lokalen Branches musst du -u (oder --set-upstream) verwenden, um eine Verknüpfung zwischen deinem lokalen Branch und einem gleichnamigen Branch auf dem Remote-Server herzustellen.
+Wann verwenden: Nachdem du Änderungen lokal committet hast und sie auf GitHub sichern oder mit anderen teilen möchtest.
+
+Änderungen rückgängig machen / Fehler beheben
+git checkout -- <dateiname>
+Erklärung: Verwirft alle uncommitteten Änderungen an der angegebenen Datei und setzt sie auf den Stand des letzten Commits zurück. Achtung: Diese Änderungen sind dann weg!
+Wann verwenden: Wenn du lokale Änderungen an einer Datei gemacht hast, die du nicht behalten willst und die noch nicht gestaged oder committet wurden.
+
+git reset HEAD <dateiname>
+Erklärung: Entfernt eine Datei aus der Staging Area (macht ein git add rückgängig), aber die Änderungen an der Datei in deinem Arbeitsverzeichnis bleiben erhalten.
+Wann verwenden: Wenn du eine Datei versehentlich mit git add zur Staging Area hinzugefügt hast.
+
+git revert <commit-hash>
+Erklärung: Erstellt einen neuen Commit, der die exakten Änderungen des angegebenen Commits rückgängig macht. Die ursprüngliche Historie (inklusive des "fehlerhaften" Commits) bleibt erhalten.
+Wann verwenden: Um Änderungen eines bereits gepushten Commits sicher rückgängig zu machen, ohne die Historie zu verändern. Sehr empfehlenswert für geteilte Branches.
+
+git reset --hard <commit-hash>
+Erklärung: Setzt deinen aktuellen Branch und dein Arbeitsverzeichnis hart auf den Zustand des angegebenen Commits zurück. Alle Commits und Änderungen, die nach diesem Commit kamen, werden verworfen und sind weg.
+Wann verwenden (mit großer Vorsicht!):
+Um lokale Commits zu verwerfen, die noch nicht gepusht wurden.
+NIEMALS auf einem Branch verwenden, dessen Änderungen bereits gepusht und potenziell von anderen verwendet wurden, es sei denn, du weißt genau, was du tust und musst die Historie umschreiben (erfordert dann git push --force).
+
+git branch -D <branch-name>
+Erklärung: Löscht den angegebenen lokalen Branch. Das -D (groß D) erzwingt das Löschen, auch wenn der Branch noch nicht in einen anderen Branch gemerged wurde. Mit -d (klein d) wird nur gelöscht, wenn er bereits gemerged wurde.
+Wann verwenden: Um nicht mehr benötigte Feature-Branches lokal zu entfernen.
+
+git push origin --delete <branch-name>
+Erklärung: Löscht den angegebenen Branch auf dem Remote-Repository (z.B. GitHub).
+Wann verwenden: Um nicht mehr benötigte Feature-Branches auch auf GitHub zu entfernen.
+Zusätzlicher wichtiger Befehl für das "Umschreiben" der Historie (mit noch größerer Vorsicht!)
+
+git push --force origin <branch-name> oder git push -f origin <branch-name>
+Erklärung: Erzwingt das Pushen deiner lokalen Branch-Version zum Remote-Server und überschreibt dort den Branch, auch wenn die Historien voneinander abweichen (z.B. nach einem lokalen git reset --hard).
+Wann verwenden (EXTREM VORSICHTIG!):
+Nur wenn du die Remote-Historie bewusst umschreiben musst (z.B. nach einem lokalen git reset --hard auf einem bereits gepushten Branch).
+RISIKO: Kann die Arbeit anderer zerstören, wenn sie auf dem alten Stand des Remote-Branches basieren. In Team-Projekten fast immer zu vermeiden oder nur nach genauer Absprache. Für deine privaten Projekte ist es weniger kritisch, aber sei dir der Konsequenzen bewusst.
+Empfohlener Workflow für neue Entwicklungen/Änderungen:
+
+git checkout main (oder dein Hauptbranch)
+git pull (um auf dem neuesten Stand zu sein)
+git checkout -b feature/neues-feature (neuen Branch erstellen und dorthin wechseln)
+Änderungen machen, testen.
+git add .
+git commit -m "Beschreibung der Änderungen" (oft und in kleinen Schritten)
+git push -u origin feature/neues-feature (um den Branch auf GitHub zu sichern/teilen)
+Wenn zufrieden:
+git checkout main
+git pull (um sicherzustellen, dass main aktuell ist)
+git merge feature/neues-feature (um die Änderungen in main zu übernehmen)
+git push origin main
+git branch -d feature/neues-feature (lokalen Feature-Branch löschen)
+git push origin --delete feature/neues-feature (Remote-Feature-Branch löschen)
+Ich hoffe, diese Übersicht hilft dir! Es ist viel, aber mit der Zeit und Übung werden diese Befehle zur zweiten Natur. Das Wichtigste ist, keine Angst vor Git zu haben und bei Unsicherheiten lieber einmal mehr git status zu machen oder nachzufragen.
+
+
+
+
+Schritt-für-Schritt-Anleitung:
+
+Phase 1: Aktuellen Stand sichern und neuen Branch erstellen
+Zum Hauptbranch wechseln (falls noch nicht dort):
+git checkout main
+
+Aktuellsten Stand vom Remote holen (empfohlen):
+git pull origin main
+Erklärung: Synchronisiert deinen lokalen main-Branch mit dem main-Branch auf GitHub.
+
+Prüfen, ob alles "sauber" ist (optional, aber gut):
+git status
+
+Neuen Branch erstellen UND dorthin wechseln:
+git checkout -b mein-experiment-branch
+
+Erklärung: Erstellt einen neuen Branch namens mein-experiment-branch basierend auf dem aktuellen Stand von main und wechselt sofort in diesen neuen Branch. Hier kannst du jetzt sicher Änderungen vornehmen.
+
+Phase 2: Änderungen im neuen Branch vornehmen
+Änderungen im Code durchführen:
+Bearbeite deine Dateien (tracker.py, index.html, etc.) wie gewünscht.
+Änderungen lokal committen (oft und in kleinen Schritten): git commit, git add
+Erklärung: Speichert deine Fortschritte im mein-experiment-branch. Dein main-Branch bleibt davon unberührt.
+
+Feature-Branch auf GitHub pushen (optional, aber gut für Backup):
+git push -u origin mein-experiment-branch
+Erklärung: Erstellt eine Kopie deines mein-experiment-branch auf GitHub.
+
+Phase 3: Entscheidung – Änderungen übernehmen oder verwerfen
+Option A: Änderungen sind gut und sollen in den Hauptbranch (main) übernommen werden
+Zum Hauptbranch wechseln:
+git checkout main
+
+Sicherstellen, dass der Hauptbranch aktuell ist (falls andere zwischenzeitlich gepusht haben):
+git pull origin main
+
+Die Änderungen vom Experimentier-Branch in den Hauptbranch mergen:
+git merge mein-experiment-branch
+
+Erklärung: Übernimmt alle Commits von mein-experiment-branch in den main-Branch. Es kann zu Merge-Konflikten kommen, wenn dieselben Zeilen in beiden Branches unterschiedlich geändert wurden. Git wird dich dann anleiten, diese Konflikte zu lösen.
+Änderungen auf dem Hauptbranch zu GitHub pushen:
+git push origin main
+
+Experimentier-Branch lokal löschen (optional, da er jetzt gemerged ist):
+git branch -d mein-experiment-branch
+
+Erklärung: Das -d (klein) löscht nur, wenn der Branch erfolgreich gemerged wurde.
+
+Experimentier-Branch auf GitHub löschen (optional):
+git push origin --delete mein-experiment-branch
+
+
+
+Option B: Änderungen im Experimentier-Branch sind nicht gut und sollen verworfen werden
+Zum Hauptbranch wechseln:
+git checkout main
+Erklärung: Dein main-Branch ist immer noch auf dem alten, sauberen Stand, da die Änderungen nur im mein-experiment-branch waren.
+
+Experimentier-Branch lokal löschen:
+git branch -D mein-experiment-branch
+
+Erklärung: Das -D (groß) erzwingt das Löschen des Branches, auch wenn er nicht gemerged wurde. Alle Commits, die nur auf diesem Branch existierten, sind dann (zumindest lokal) schwerer wiederherstellbar, aber das ist ja das Ziel, wenn man ihn verwirft.
+
+Experimentier-Branch auf GitHub löschen (falls du ihn in Schritt 7 gepusht hattest):
+git push origin --delete mein-experiment-branch
