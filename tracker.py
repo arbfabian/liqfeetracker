@@ -1,3 +1,4 @@
+# tracker.py
 import os
 import json
 from datetime import datetime, timedelta, timezone
@@ -9,14 +10,12 @@ from web3.exceptions import (
     # TimeExhausted, # Für .call() meist nicht relevant
     TooManyRequests, 
     ContractCustomError
-    # ValidationError ENTFERNT, da es den ImportError verursacht
+    # ValidationError HIER ENTFERNT
 )
 from dotenv import load_dotenv
 import requests
 import math
-import shutil
-import tempfile
-import time 
+import time # Für Retries in Coingecko
 
 load_dotenv()
 
@@ -47,83 +46,7 @@ UNISWAP_V3_POOL_ABI_MINIMAL = json.loads("""
 ]
 """)
 
-def w3_call_with_retry(func, retries=3, delay=5):
-    retryable_exceptions = (
-        requests.exceptions.ConnectionError, 
-        requests.exceptions.Timeout,
-        ConnectionError, 
-        TimeoutError, 
-        TooManyRequests 
-    )
-    non_retryable_contract_errors = (
-        ContractLogicError, 
-        BadFunctionCallOutput, 
-        ContractCustomError
-    )
-    for attempt in range(retries):
-        try:
-            return func()
-        except retryable_exceptions as e:
-            print(f"    Web3 call failed (Attempt {attempt + 1}/{retries}) with retryable error: {type(e).__name__} - {e}")
-            if attempt < retries - 1:
-                print(f"    Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                print(f"    All retries failed for {func.__name__ if hasattr(func, '__name__') else 'lambda function'} after retryable error.")
-        except non_retryable_contract_errors as e:
-            print(f"    Web3 contract error (no retry): {type(e).__name__} - {e}")
-            return None 
-        except Exception as e: 
-            print(f"    Unexpected error during Web3 call (Attempt {attempt + 1}/{retries}): {type(e).__name__} - {e}")
-            if attempt == retries -1 :
-                 print(f"    Last attempt failed for unexpected error on {func.__name__ if hasattr(func, '__name__') else 'lambda function'}.")
-            # raise e # Fehler weiterwerfen, um Workflow fehlschlagen zu lassen, wenn gewünscht
-    return None
-
-def load_json_data(filename=JSON_DATA_FILE):
-    # (Implementierung von load_json_data wie in deinem Code)
-    if os.path.exists(filename):
-        try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            print(f"Warnung: Konnte JSON aus {filename} nicht dekodieren. Starte mit leeren Daten für diesen Lauf.")
-            return {} 
-        except Exception as e:
-            print(f"Fehler beim Laden von {filename}: {e}. Starte mit leeren Daten.")
-            return {}
-    return {}
-
-def save_json_data_safely(data, filename=JSON_DATA_FILE):
-    # (Implementierung von save_json_data_safely wie in meinem vorherigen Post)
-    try:
-        file_dir = os.path.dirname(os.path.abspath(filename))
-        if not file_dir: 
-            file_dir = '.'
-        if not os.path.exists(file_dir):
-             os.makedirs(file_dir, exist_ok=True)
-
-        temp_file_descriptor, temp_filepath = tempfile.mkstemp(suffix='.tmp', prefix=os.path.basename(filename) + '-', dir=file_dir)
-        
-        print(f"  Schreibe Daten sicher nach: {filename} (via {temp_filepath})")
-
-        with os.fdopen(temp_file_descriptor, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-        
-        shutil.move(temp_filepath, filename) 
-        print(f"  Daten erfolgreich nach {filename} gespeichert.")
-
-    except Exception as e:
-        print(f"  FEHLER beim sicheren Speichern von Daten nach {filename}: {e}")
-        if 'temp_filepath' in locals() and os.path.exists(temp_filepath):
-            try:
-                os.remove(temp_filepath)
-                print(f"  Temporäre Datei {temp_filepath} wurde nach Fehler gelöscht.")
-            except Exception as e_remove:
-                print(f"  Fehler beim Löschen der temporären Datei {temp_filepath}: {e_remove}")
-
 def tick_to_price(tick, token0_decimals, token1_decimals, is_token0_base=True):
-    # (Implementierung wie in deinem Code)
     price_ratio = (1.0001 ** tick)
     if is_token0_base:
         return price_ratio / (10 ** (token1_decimals - token0_decimals))
@@ -131,15 +54,31 @@ def tick_to_price(tick, token0_decimals, token1_decimals, is_token0_base=True):
         return (1 / price_ratio) / (10 ** (token0_decimals - token1_decimals))
 
 def sqrt_price_x96_to_price(sqrt_price_x96, token0_decimals, token1_decimals, is_token0_base=True):
-    # (Implementierung wie in deinem Code)
     price_ratio = (sqrt_price_x96 / (2**96)) ** 2
     if is_token0_base:
         return price_ratio / (10 ** (token1_decimals - token0_decimals))
     else:
         return (1 / price_ratio) / (10 ** (token0_decimals - token1_decimals))
 
+def load_json_data(filename=JSON_DATA_FILE): # Alte Version
+    if os.path.exists(filename):
+        try:
+            with open(filename, 'r', encoding='utf-8') as f: 
+                return json.load(f)
+        except json.JSONDecodeError: 
+            print(f"Warning: Could not decode JSON from {filename}. Starting with empty data.")
+            return {}
+    return {}
+
+def save_json_data(data, filename=JSON_DATA_FILE): # Alte Version
+    try:
+        with open(filename, 'w', encoding='utf-8') as f: 
+            json.dump(data, f, indent=2)
+        print(f"Data saved to {filename}")
+    except Exception as e: 
+        print(f"Error saving data to {filename}: {e}")
+
 def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one", retries=3, delay=5):
-    # (Implementierung wie in deinem Code, mit Retries und time.sleep)
     checksum_address = Web3.to_checksum_address(contract_address)
     url = f"https://api.coingecko.com/api/v3/coins/{platform_id}/contract/{checksum_address}"
     for attempt in range(retries):
@@ -151,7 +90,7 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
             if price_usd is not None:
                 return price_usd
             else:
-                print(f"    Warnung: USD price not found in CoinGecko response for {checksum_address}. Attempt {attempt + 1}/{retries}.")
+                print(f"    Warning: USD price not found in CoinGecko response for {checksum_address}. Attempt {attempt + 1}/{retries}.")
         except requests.exceptions.HTTPError as http_err: print(f"    CoinGecko HTTP error for {contract_address}: {http_err}. Attempt {attempt + 1}/{retries}.")
         except requests.exceptions.ConnectionError as conn_err: print(f"    CoinGecko Connection error for {contract_address}: {conn_err}. Attempt {attempt + 1}/{retries}.")
         except requests.exceptions.Timeout as timeout_err: print(f"    CoinGecko Timeout error for {contract_address}: {timeout_err}. Attempt {attempt + 1}/{retries}.")
@@ -165,7 +104,6 @@ def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one
     return None
 
 def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
-    # (Implementierung wie in deinem Code)
     try:
         if os.path.exists(filename):
             with open(filename, 'r', encoding='utf-8') as f:
@@ -181,16 +119,17 @@ def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
                     else: print(f"Error: Ungültiges Format Zeile {ln} in '{filename}'"); return None
                 return None 
         else: print(f"Info: Config '{filename}' nicht gefunden."); return None
-    except Exception as e: print(f"Fehler beim Lesen von '{filename}': {e}"); return None
+    except Exception as e: print(f"Fehler Lesen '{filename}': {e}"); return None
 
 def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data, hours_to_check=24):
-    # (Implementierung wie in deinem Code)
     if not os.path.exists(price_ticks_filepath) or not position_range_data: return None
     if position_range_data.get("price_lower") is None or position_range_data.get("price_upper") is None: return None
+    
     price_lower = min(position_range_data["price_lower"], position_range_data["price_upper"])
     price_upper = max(position_range_data["price_lower"], position_range_data["price_upper"])
     range_base_token = position_range_data.get("base_token_for_price")
     range_quote_token = position_range_data.get("quote_token_for_price")
+
     all_price_ticks = []
     if os.path.exists(price_ticks_filepath):
         with open(price_ticks_filepath, 'r', encoding='utf-8') as f:
@@ -199,13 +138,16 @@ def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data
                 if not isinstance(all_price_ticks, list): return None
             except json.JSONDecodeError: return None
     else: return None 
+
     now_utc = datetime.now(timezone.utc)
     cutoff_time_utc = now_utc - timedelta(hours=hours_to_check)
     relevant_ticks, ticks_in_range = 0, 0
+
     for tick_entry in all_price_ticks:
         try:
             if not all([tick_entry.get("timestamp"), tick_entry.get("price"), tick_entry.get("base_token"), tick_entry.get("quote_token")]): continue
             if tick_entry.get("base_token") != range_base_token or tick_entry.get("quote_token") != range_quote_token: continue
+            
             tick_dt = datetime.fromisoformat(tick_entry["timestamp"].replace("Z", "+00:00"))
             if tick_dt >= cutoff_time_utc:
                 relevant_ticks += 1
@@ -215,10 +157,6 @@ def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data
     return (ticks_in_range / relevant_ticks) * 100
 
 def main():
-    # (Rest deiner main Funktion, aber mit w3_call_with_retry für alle Web3-Aufrufe)
-    # (und save_json_data_safely am Ende)
-    # Beispiel für die Verwendung innerhalb von main(), wie im vorherigen Post gezeigt.
-    # ... (Anfang von main)
     print(f"--- Starting Uniswap V3 Fee Tracker ({datetime.now(timezone.utc).isoformat()}) ---")
     all_data = load_json_data(JSON_DATA_FILE)
 
@@ -238,13 +176,13 @@ def main():
                 pid_json = int(pk_json.replace("position_","")); should_be_active = active_pos_id_cfg is not None and pid_json == active_pos_id_cfg
                 if all_data[pk_json].get("is_active",False) != should_be_active: print(f"  {pk_json} -> is_active: {should_be_active}")
                 all_data[pk_json]["is_active"] = should_be_active
-                if should_be_active and all_data[pk_json].get("initial_investment_usd") != active_pos_config['initial_investment_usd']:
+                if should_be_active and active_pos_config and all_data[pk_json].get("initial_investment_usd") != active_pos_config['initial_investment_usd']:
                     all_data[pk_json]["initial_investment_usd"] = active_pos_config['initial_investment_usd']
                     print(f"  Initialinvestment für {pk_json} aktualisiert.")
             except ValueError: print(f"  ID für Key '{pk_json}' nicht parsebar.")
 
     if not active_pos_config:
-        print("Keine aktive Position in Config."); save_json_data_safely(all_data, JSON_DATA_FILE); print(f"\n--- Tracker Finished ---"); return
+        print("Keine aktive Position in Config."); save_json_data(all_data, JSON_DATA_FILE); print(f"\n--- Tracker Finished ---"); return
 
     pos_nft_id = active_pos_config['id']; pos_key = f"position_{pos_nft_id}"
     today_utc = datetime.now(timezone.utc); today_str = today_utc.strftime('%Y-%m-%d'); yday_str = (today_utc - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -255,9 +193,7 @@ def main():
 
     print(f"\n--- Processing ACTIVE Position ID: {pos_nft_id} for {today_str} ---")
     try:
-        pos_details_func = lambda: nfpm_contract.functions.positions(pos_nft_id).call()
-        pos_details = w3_call_with_retry(pos_details_func)
-        if pos_details is None: raise Exception(f"Konnte Positionsdetails für {pos_nft_id} nicht abrufen.")
+        position_details = nfpm_contract.functions.positions(pos_nft_id).call()
         
         t0_addr_cs = Web3.to_checksum_address(pos_details[2]); t1_addr_cs = Web3.to_checksum_address(pos_details[3])
         tick_low = pos_details[5]; tick_up = pos_details[6]
@@ -265,25 +201,21 @@ def main():
         t0_contract = w3.eth.contract(address=t0_addr_cs, abi=ERC20_ABI_MINIMAL)
         t1_contract = w3.eth.contract(address=t1_addr_cs, abi=ERC20_ABI_MINIMAL)
 
-        t0_dec = w3_call_with_retry(lambda: t0_contract.functions.decimals().call())
-        if t0_dec is None: raise Exception(f"Konnte Decimals für Token0 {t0_addr_cs} nicht abrufen.")
-        t1_dec = w3_call_with_retry(lambda: t1_contract.functions.decimals().call())
-        if t1_dec is None: raise Exception(f"Konnte Decimals für Token1 {t1_addr_cs} nicht abrufen.")
+        t0_dec = t0_contract.functions.decimals().call()
+        t1_dec = t1_contract.functions.decimals().call()
         
         curr_t0_sym, curr_t1_sym = "", ""
         if "token_pair_symbols" in all_data[pos_key] and all_data[pos_key]["token_pair_symbols"]:
             syms = all_data[pos_key]["token_pair_symbols"].split('/'); 
             if len(syms)==2: curr_t0_sym, curr_t1_sym = syms[0], syms[1]
         if not curr_t0_sym or not curr_t1_sym:
-            curr_t0_sym = w3_call_with_retry(lambda: t0_contract.functions.symbol().call()) or "T0S_ERR"
-            curr_t1_sym = w3_call_with_retry(lambda: t1_contract.functions.symbol().call()) or "T1S_ERR"
+            curr_t0_sym = t0_contract.functions.symbol().call() or "T0S_ERR"
+            curr_t1_sym = t1_contract.functions.symbol().call() or "T1S_ERR"
             all_data[pos_key]["token_pair_symbols"] = f"{curr_t0_sym}/{curr_t1_sym}"
         print(f"  Tokens: {curr_t0_sym}({t0_dec})/{curr_t1_sym}({t1_dec})")
 
         collect_p = (pos_nft_id, Web3.to_checksum_address(WALLET_ADDRESS), 2**128-1, 2**128-1)
-        sim_collect_func = lambda: nfpm_contract.functions.collect(collect_p).call({'from': Web3.to_checksum_address(WALLET_ADDRESS)})
-        sim_collect = w3_call_with_retry(sim_collect_func)
-        if sim_collect is None: raise Exception(f"Collect-Simulation für {pos_nft_id} fehlgeschlagen.")
+        sim_collect = nfpm_contract.functions.collect(collect_p).call({'from': Web3.to_checksum_address(WALLET_ADDRESS)})
         
         uncl_fees_t0_act = sim_collect[0]/(10**t0_dec); uncl_fees_t1_act = sim_collect[1]/(10**t1_dec)
         
@@ -296,30 +228,32 @@ def main():
         elif curr_uncl_t0_usd is not None: curr_total_uncl_usd = curr_uncl_t0_usd
         elif curr_uncl_t1_usd is not None: curr_total_uncl_usd = curr_uncl_t1_usd
 
-        PRICE_BASE_IS_T0 = True 
+        PRICE_PRESENTATION_IS_TOKEN0_BASE = True 
+        
         pool_addr = WETH_WBTC_005_POOL_ADDRESS_ARBITRUM
         p_base_sym_json, p_quote_sym_json = "", ""
+        if PRICE_PRESENTATION_IS_TOKEN0_BASE:
+             p_base_sym_json, p_quote_sym_json = curr_t0_sym, curr_t1_sym
+        else:
+             p_base_sym_json, p_quote_sym_json = curr_t1_sym, curr_t0_sym
+
         p_low_calc, p_up_calc, curr_mkt_price_calc = None,None,None
 
         if pool_addr:
             pool_c = w3.eth.contract(address=pool_addr, abi=UNISWAP_V3_POOL_ABI_MINIMAL)
-            slot0_func = lambda: pool_c.functions.slot0().call()
-            slot0 = w3_call_with_retry(slot0_func)
-            if slot0 is None: raise Exception(f"Konnte slot0 vom Pool {pool_addr} nicht abrufen.")
+            slot0 = pool_c.functions.slot0().call() 
             
-            p_low_t1_t0 = tick_to_price(tick_low,t0_dec,t1_dec,True)
-            p_up_t1_t0 = tick_to_price(tick_up,t0_dec,t1_dec,True)
-            curr_mkt_price_t1_t0 = sqrt_price_x96_to_price(slot0[0],t0_dec,t1_dec,True)
+            price_lower_t1_per_t0 = tick_to_price(tick_low,t0_dec,t1_dec,True) 
+            price_upper_t1_per_t0 = tick_to_price(tick_up,t0_dec,t1_dec,True)
+            current_market_price_t1_per_t0 = sqrt_price_x96_to_price(slot0[0],t0_dec,t1_dec,True)
 
-            if PRICE_BASE_IS_T0:
-                p_low_calc,p_up_calc,curr_mkt_price_calc = p_low_t1_t0,p_up_t1_t0,curr_mkt_price_t1_t0
-                p_base_sym_json,p_quote_sym_json = curr_t0_sym,curr_t1_sym
+            if PRICE_PRESENTATION_IS_TOKEN0_BASE:
+                p_low_calc,p_up_calc,curr_mkt_price_calc = price_lower_t1_per_t0,price_upper_t1_per_t0,current_market_price_t1_per_t0
             else:
-                p_low_calc = 1/p_up_t1_t0 if p_up_t1_t0!=0 else None
-                p_up_calc = 1/p_low_t1_t0 if p_low_t1_t0!=0 else None
-                if p_low_calc is not None and p_up_calc is not None and p_low_calc>p_up_calc: p_low_calc,p_up_calc=p_up_calc,p_low_calc
-                curr_mkt_price_calc = 1/curr_mkt_price_t1_t0 if curr_mkt_price_t1_t0!=0 else None
-                p_base_sym_json,p_quote_sym_json = curr_t1_sym,curr_t0_sym
+                p_low_calc = 1/price_upper_t1_per_t0 if price_upper_t1_per_t0!=0 else None
+                p_up_calc = 1/price_lower_t1_per_t0 if price_lower_t1_per_t0!=0 else None
+                if p_low_calc is not None and p_up_calc is not None and p_low_calc > p_up_calc: p_low_calc,p_up_calc=p_up_calc,p_low_calc
+                curr_mkt_price_calc = 1/current_market_price_t1_per_t0 if current_market_price_t1_per_t0!=0 else None
             
             print(f"  Range: [{p_low_calc:.6f} - {p_up_calc:.6f}] {p_quote_sym_json} per {p_base_sym_json}")
             if curr_mkt_price_calc is not None: print(f"  Mkt Price: {curr_mkt_price_calc:.6f} {p_quote_sym_json} per {p_base_sym_json}")
@@ -366,7 +300,7 @@ def main():
     except Exception as e_inner:
         print(f"Error bei Position {pos_nft_id}: {e_inner}"); import traceback; traceback.print_exc()
             
-    save_json_data_safely(all_data, JSON_DATA_FILE)
+    save_json_data(all_data, JSON_DATA_FILE) # Verwendung der alten save_json_data
     print(f"\n--- Fee Tracker Finished ---")
 
 if __name__ == "__main__":
