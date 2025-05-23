@@ -1,10 +1,12 @@
 name: Update Price Ticks
 
+permissions:
+  contents: write # Erlaubt das Schreiben in das Repository (Committen und Pushen)
+
 on:
   schedule:
-    # Läuft alle 30 Minuten
     - cron: '*/30 * * * *'
-  workflow_dispatch: # Erlaubt manuelles Starten
+  workflow_dispatch:
 
 jobs:
   update_price:
