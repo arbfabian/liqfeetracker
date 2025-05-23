@@ -1,4 +1,3 @@
-# tracker.py
 import os
 import json
 from datetime import datetime, timedelta, timezone
@@ -6,6 +5,8 @@ from web3 import Web3
 from dotenv import load_dotenv
 import requests
 import math
+import shutil
+import tempfile
 
 load_dotenv()
 
@@ -36,6 +37,46 @@ UNISWAP_V3_POOL_ABI_MINIMAL = json.loads("""
 ]
 """)
 
+def load_json_data(filename=JSON_DATA_FILE):
+    if os.path.exists(filename):
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print(f"Warnung: Konnte JSON aus {filename} nicht dekodieren. Starte mit leeren Daten für diesen Lauf.")
+            return {} 
+        except Exception as e:
+            print(f"Fehler beim Laden von {filename}: {e}. Starte mit leeren Daten.")
+            return {}
+    return {}
+
+def save_json_data_safely(data, filename=JSON_DATA_FILE):
+    try:
+        file_dir = os.path.dirname(os.path.abspath(filename))
+        if not file_dir: 
+            file_dir = '.'
+        if not os.path.exists(file_dir):
+             os.makedirs(file_dir, exist_ok=True)
+
+        temp_file_descriptor, temp_filepath = tempfile.mkstemp(suffix='.tmp', prefix=os.path.basename(filename) + '-', dir=file_dir)
+        
+        print(f"  Schreibe Daten sicher nach: {filename} (via {temp_filepath})")
+
+        with os.fdopen(temp_file_descriptor, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        
+        shutil.move(temp_filepath, filename) 
+        print(f"  Daten erfolgreich nach {filename} gespeichert.")
+
+    except Exception as e:
+        print(f"  FEHLER beim sicheren Speichern von Daten nach {filename}: {e}")
+        if 'temp_filepath' in locals() and os.path.exists(temp_filepath):
+            try:
+                os.remove(temp_filepath)
+                print(f"  Temporäre Datei {temp_filepath} wurde nach Fehler gelöscht.")
+            except Exception as e_remove:
+                print(f"  Fehler beim Löschen der temporären Datei {temp_filepath}: {e_remove}")
+
 def tick_to_price(tick, token0_decimals, token1_decimals, is_token0_base=True):
     price_ratio = (1.0001 ** tick)
     if is_token0_base:
@@ -50,35 +91,33 @@ def sqrt_price_x96_to_price(sqrt_price_x96, token0_decimals, token1_decimals, is
     else:
         return (1 / price_ratio) / (10 ** (token0_decimals - token1_decimals))
 
-def load_json_data(filename=JSON_DATA_FILE):
-    if os.path.exists(filename):
+def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one", retries=3, delay=5):
+    checksum_address = Web3.to_checksum_address(contract_address)
+    url = f"https://api.coingecko.com/api/v3/coins/{platform_id}/contract/{checksum_address}"
+    for attempt in range(retries):
         try:
-            with open(filename, 'r') as f: return json.load(f)
-        except json.JSONDecodeError: print(f"Warning: Could not decode JSON from {filename}. Starting with empty data."); return {}
-    return {}
-
-def save_json_data(data, filename=JSON_DATA_FILE):
-    try:
-        with open(filename, 'w') as f: json.dump(data, f, indent=2)
-        print(f"Data saved to {filename}")
-    except Exception as e: print(f"Error saving data to {filename}: {e}")
-
-def get_single_token_price_coingecko(contract_address, platform_id="arbitrum-one"):
-    try:
-        checksum_address = Web3.to_checksum_address(contract_address)
-        url = f"https://api.coingecko.com/api/v3/coins/{platform_id}/contract/{checksum_address}"
-        response = requests.get(url, timeout=10); response.raise_for_status(); data = response.json()
-        price_usd = data.get("market_data", {}).get("current_price", {}).get("usd")
-        if price_usd is None: print(f"    Warning: Could not parse USD price for {checksum_address}. Response: {data}")
-        return price_usd
-    except requests.exceptions.RequestException as e: print(f"    CoinGecko API request error for {contract_address}: {e}")
-    except Exception as e_gen: print(f"    Error fetching price for {contract_address}: {e_gen}")
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            price_usd = data.get("market_data", {}).get("current_price", {}).get("usd")
+            if price_usd is not None:
+                return price_usd
+            else:
+                print(f"    Warnung: USD price not found in CoinGecko response for {checksum_address}. Attempt {attempt + 1}/{retries}.")
+        except requests.exceptions.HTTPError as http_err: print(f"    CoinGecko HTTP error for {contract_address}: {http_err}. Attempt {attempt + 1}/{retries}.")
+        except requests.exceptions.ConnectionError as conn_err: print(f"    CoinGecko Connection error for {contract_address}: {conn_err}. Attempt {attempt + 1}/{retries}.")
+        except requests.exceptions.Timeout as timeout_err: print(f"    CoinGecko Timeout error for {contract_address}: {timeout_err}. Attempt {attempt + 1}/{retries}.")
+        except requests.exceptions.RequestException as req_err: print(f"    CoinGecko API request error for {contract_address}: {req_err}. Attempt {attempt + 1}/{retries}.")
+        except json.JSONDecodeError as json_err: print(f"    Error decoding CoinGecko JSON response for {contract_address}: {json_err}. Attempt {attempt + 1}/{retries}.")
+        except Exception as e_gen: print(f"    Unexpected error fetching price for {contract_address}: {e_gen}. Attempt {attempt + 1}/{retries}.")
+        if attempt < retries - 1: time.sleep(delay)
+        else: print(f"    All CoinGecko retries failed for {contract_address}.")
     return None
 
 def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
     try:
         if os.path.exists(filename):
-            with open(filename, 'r') as f:
+            with open(filename, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 if not lines: return None
                 for line_number, line in enumerate(lines, 1):
@@ -98,57 +137,44 @@ def get_active_position_config(filename=CONFIG_FILE_POSITIONS):
     except Exception as e: print(f"Fehler beim Lesen der Konfigurationsdatei '{filename}': {e}"); return None
 
 def calculate_time_in_range_percentage(price_ticks_filepath, position_range_data, hours_to_check=24):
-    if not os.path.exists(price_ticks_filepath) or not position_range_data:
-        return None
+    if not os.path.exists(price_ticks_filepath) or not position_range_data: return None
+    if position_range_data.get("price_lower") is None or position_range_data.get("price_upper") is None: return None
     
-    if position_range_data.get("price_lower") is None or position_range_data.get("price_upper") is None:
-        return None
-
     price_lower = min(position_range_data["price_lower"], position_range_data["price_upper"])
     price_upper = max(position_range_data["price_lower"], position_range_data["price_upper"])
     range_base_token = position_range_data.get("base_token_for_price")
     range_quote_token = position_range_data.get("quote_token_for_price")
 
     all_price_ticks = []
-    with open(price_ticks_filepath, 'r') as f:
-        try:
-            all_price_ticks = json.load(f)
-            if not isinstance(all_price_ticks, list): return None
-        except json.JSONDecodeError: return None
+    if os.path.exists(price_ticks_filepath): # Zusätzlicher Check
+        with open(price_ticks_filepath, 'r', encoding='utf-8') as f:
+            try:
+                all_price_ticks = json.load(f)
+                if not isinstance(all_price_ticks, list): return None
+            except json.JSONDecodeError: return None
+    else:
+        return None # Keine Preis-Ticks-Datei vorhanden
 
     now_utc = datetime.now(timezone.utc)
     cutoff_time_utc = now_utc - timedelta(hours=hours_to_check)
-    
-    relevant_ticks = 0
-    ticks_in_range = 0
+    relevant_ticks, ticks_in_range = 0, 0
 
     for tick_entry in all_price_ticks:
         try:
-            tick_timestamp_str = tick_entry.get("timestamp")
-            tick_price = tick_entry.get("price")
-            tick_base = tick_entry.get("base_token")
-            tick_quote = tick_entry.get("quote_token")
-
-            if not all([tick_timestamp_str, tick_price, tick_base, tick_quote]): continue
-            if tick_base != range_base_token or tick_quote != range_quote_token: continue
-
-            if tick_timestamp_str.endswith("Z"):
-                tick_dt = datetime.fromisoformat(tick_timestamp_str[:-1] + "+00:00")
-            else:
-                tick_dt = datetime.fromisoformat(tick_timestamp_str).replace(tzinfo=timezone.utc)
-
+            if not all([tick_entry.get("timestamp"), tick_entry.get("price"), tick_entry.get("base_token"), tick_entry.get("quote_token")]): continue
+            if tick_entry.get("base_token") != range_base_token or tick_entry.get("quote_token") != range_quote_token: continue
+            
+            tick_dt = datetime.fromisoformat(tick_entry["timestamp"].replace("Z", "+00:00"))
             if tick_dt >= cutoff_time_utc:
                 relevant_ticks += 1
-                if price_lower <= tick_price <= price_upper:
-                    ticks_in_range += 1
+                if price_lower <= tick_entry["price"] <= price_upper: ticks_in_range += 1
         except Exception: continue 
-
-    if relevant_ticks == 0: return 0 
+    if relevant_ticks == 0: return 0.0
     return (ticks_in_range / relevant_ticks) * 100
 
 def main():
-    print(f"--- Starting Uniswap V3 Fee Tracker ---")
-    all_data = load_json_data()
+    print(f"--- Starting Uniswap V3 Fee Tracker ({datetime.now(timezone.utc).isoformat()}) ---")
+    all_data = load_json_data(JSON_DATA_FILE)
 
     if not ARBITRUM_RPC_URL or not WALLET_ADDRESS: print("CRITICAL Error: Missing environment variables. Exiting."); return
     w3 = Web3(Web3.HTTPProvider(ARBITRUM_RPC_URL))
@@ -166,11 +192,9 @@ def main():
                 position_id_in_json = int(pos_key_in_json.replace("position_", ""))
                 is_currently_active_in_json = all_data[pos_key_in_json].get("is_active", False)
                 should_be_active = active_position_id_from_config is not None and position_id_in_json == active_position_id_from_config
-                
                 if is_currently_active_in_json != should_be_active:
                     print(f"  Position {pos_key_in_json} wird auf 'is_active: {should_be_active}' gesetzt.")
                 all_data[pos_key_in_json]["is_active"] = should_be_active
-
                 if should_be_active: 
                     current_investment_in_json = all_data[pos_key_in_json].get("initial_investment_usd")
                     config_investment = active_pos_config['initial_investment_usd']
@@ -181,7 +205,7 @@ def main():
 
     if not active_pos_config:
         print("Keine aktive Position in Config. Es werden keine Gebühren aktualisiert.")
-        save_json_data(all_data); print(f"\n--- Fee Tracker Finished (No active fees updated) ---"); return
+        save_json_data_safely(all_data, JSON_DATA_FILE); print(f"\n--- Fee Tracker Finished (No active fees updated) ---"); return
 
     position_nft_id = active_pos_config['id']
     position_key = f"position_{position_nft_id}"
@@ -219,29 +243,20 @@ def main():
 
         collect_params = (position_nft_id, Web3.to_checksum_address(WALLET_ADDRESS), 2**128 - 1, 2**128 - 1)
         simulated_collect = nfpm_contract.functions.collect(collect_params).call({'from': Web3.to_checksum_address(WALLET_ADDRESS)})
-        
         unclaimed_fees_token0_actual = simulated_collect[0] / (10**token0_decimals) 
         unclaimed_fees_token1_actual = simulated_collect[1] / (10**token1_decimals)
         
         price_token0_usd = get_single_token_price_coingecko(token0_address_checksum)
         price_token1_usd = get_single_token_price_coingecko(token1_address_checksum)
-        
         current_unclaimed_token0_usd_val, current_unclaimed_token1_usd_val, current_total_unclaimed_usd_val = None, None, None
-        
-        if price_token0_usd is not None: 
-            current_unclaimed_token0_usd_val = unclaimed_fees_token0_actual * price_token0_usd 
-        if price_token1_usd is not None: 
-            current_unclaimed_token1_usd_val = unclaimed_fees_token1_actual * price_token1_usd
-        
+        if price_token0_usd is not None: current_unclaimed_token0_usd_val = unclaimed_fees_token0_actual * price_token0_usd 
+        if price_token1_usd is not None: current_unclaimed_token1_usd_val = unclaimed_fees_token1_actual * price_token1_usd
         if current_unclaimed_token0_usd_val is not None and current_unclaimed_token1_usd_val is not None:
             current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val + current_unclaimed_token1_usd_val
-        elif current_unclaimed_token0_usd_val is not None: 
-            current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
-        elif current_unclaimed_token1_usd_val is not None: 
-            current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
+        elif current_unclaimed_token0_usd_val is not None: current_total_unclaimed_usd_val = current_unclaimed_token0_usd_val
+        elif current_unclaimed_token1_usd_val is not None: current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
 
         PRICE_PRESENTATION_IS_TOKEN0_BASE = True 
-        
         pool_address_for_position = WETH_WBTC_005_POOL_ADDRESS_ARBITRUM
         price_base_token_symbol_for_json, price_quote_token_symbol_for_json = "", ""
         price_lower_calculated, price_upper_calculated, current_market_price_calculated = None, None, None
@@ -250,11 +265,9 @@ def main():
             pool_contract = w3.eth.contract(address=pool_address_for_position, abi=UNISWAP_V3_POOL_ABI_MINIMAL)
             price_lower_t1_per_t0 = tick_to_price(tick_lower, token0_decimals, token1_decimals, True)
             price_upper_t1_per_t0 = tick_to_price(tick_upper, token0_decimals, token1_decimals, True) 
-
             slot0 = pool_contract.functions.slot0().call()
             sqrt_price_x96_current = slot0[0]
             current_market_price_t1_per_t0 = sqrt_price_x96_to_price(sqrt_price_x96_current, token0_decimals, token1_decimals, True)
-
             if PRICE_PRESENTATION_IS_TOKEN0_BASE:
                 price_lower_calculated = price_lower_t1_per_t0
                 price_upper_calculated = price_upper_t1_per_t0
@@ -269,12 +282,11 @@ def main():
                 current_market_price_calculated = 1 / current_market_price_t1_per_t0 if current_market_price_t1_per_t0 != 0 else None
                 price_base_token_symbol_for_json = current_token1_symbol 
                 price_quote_token_symbol_for_json = current_token0_symbol 
-
             print(f"  Range: [{price_lower_calculated:.6f} - {price_upper_calculated:.6f}] {price_quote_token_symbol_for_json} per {price_base_token_symbol_for_json}")
             if current_market_price_calculated is not None:
                 print(f"  Current Market Price: {current_market_price_calculated:.6f} {price_quote_token_symbol_for_json} per {price_base_token_symbol_for_json}")
         else:
-            print(f"  Pool address for position {position_nft_id} not defined, skipping range price calculation.")
+            print(f"  Pool address for position {position_nft_id} not defined.")
 
         today_data_entry = {
             "total_unclaimed_fees": {"token0_actual": unclaimed_fees_token0_actual, "token1_actual": unclaimed_fees_token1_actual, "token0_usd": current_unclaimed_token0_usd_val, "token1_usd": current_unclaimed_token1_usd_val, "total_usd": current_total_unclaimed_usd_val},
@@ -295,14 +307,13 @@ def main():
         daily_earned_token1_actual = max(0, daily_earned_token1_actual)
 
         daily_earned_token0_usd_val, daily_earned_token1_usd_val, daily_total_earned_usd_val = None, None, None
-        if price_token0_usd: daily_earned_token0_usd_val = daily_earned_token0_actual * price_token0_usd
-        if price_token1_usd: daily_earned_token1_usd_val = daily_earned_token1_actual * price_token1_usd
-        if daily_earned_token0_usd_val and daily_earned_token1_usd_val: daily_total_earned_usd_val = daily_earned_token0_usd_val + daily_earned_token1_usd_val
-        elif daily_earned_token0_usd_val: daily_total_earned_usd_val = daily_earned_token0_usd_val
-        elif daily_earned_token1_usd_val: daily_total_earned_usd_val = daily_earned_token1_usd_val
+        if price_token0_usd is not None: daily_earned_token0_usd_val = daily_earned_token0_actual * price_token0_usd
+        if price_token1_usd is not None: daily_earned_token1_usd_val = daily_earned_token1_actual * price_token1_usd
+        if daily_earned_token0_usd_val is not None and daily_earned_token1_usd_val is not None: daily_total_earned_usd_val = daily_earned_token0_usd_val + daily_earned_token1_usd_val
+        elif daily_earned_token0_usd_val is not None: daily_total_earned_usd_val = daily_earned_token0_usd_val
+        elif daily_earned_token1_usd_val is not None: daily_total_earned_usd_val = daily_earned_token1_usd_val
 
         today_data_entry["daily_earned_fees"] = {"token0_actual": daily_earned_token0_actual, "token1_actual": daily_earned_token1_actual, "token0_usd": daily_earned_token0_usd_val, "token1_usd": daily_earned_token1_usd_val, "total_usd": daily_total_earned_usd_val}
-        
         all_data[position_key]["history"][today_date_str] = today_data_entry
         
         time_in_range_24h = calculate_time_in_range_percentage(
@@ -320,7 +331,6 @@ def main():
             
         all_data[position_key]["last_updated_utc"] = today_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-
         print(f"\n  --- Fees Earned on {today_date_str} for Position {position_nft_id} ---")
         print(f"    {current_token0_symbol}: {daily_earned_token0_actual:.8f} ($" + f"{(daily_earned_token0_usd_val or 0.0):.2f})")
         print(f"    {current_token1_symbol}: {daily_earned_token1_actual:.8f} ($" + f"{(daily_earned_token1_usd_val or 0.0):.2f})")
@@ -330,7 +340,7 @@ def main():
         print(f"An error occurred processing position ID {position_nft_id}: {e_inner}")
         import traceback; traceback.print_exc()
             
-    save_json_data(all_data)
+    save_json_data_safely(all_data, JSON_DATA_FILE)
     print(f"\n--- Fee Tracker Finished ---")
 
 if __name__ == "__main__":
