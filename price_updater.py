@@ -16,18 +16,42 @@ PRICE_TICKS_FILE = "price_ticks.json" # Zieldatei für Preis-Ticks
 MAX_AGE_DAYS = 30 # Daten maximal 30 Tage aufbewahren
 
 # DEINE SPEZIFISCHE POOL ADRESSE (WETH/WBTC 0.05% auf Arbitrum)
-# Diese sollte mit der deiner aktiven Position übereinstimmen.
-# Für mehr Flexibilität könnte man dies auch aus fees_data.json oder einer Config lesen.
 WETH_WBTC_005_POOL_ADDRESS_ARBITRUM = "0x2f5e87C9312fa29aed5c179E456625D79015299c" 
 
-# Minimal ABI für Uniswap V3 Pool, um slot0() aufzurufen
+# Minimal ABI für Uniswap V3 Pool, um slot0(), token0() und token1() aufzurufen
 UNISWAP_V3_POOL_ABI_MINIMAL = json.loads("""
 [
-    {"inputs": [],"name": "slot0","outputs": [{"internalType": "uint160", "name": "sqrtPriceX96", "type": "uint160"},{"internalType": "int24", "name": "tick", "type": "int24"}, ...],"stateMutability": "view","type": "function"},
-    {"inputs": [],"name": "token0","outputs": [{"internalType": "address", "name": "", "type": "address"}],"stateMutability": "view","type": "function"},
-    {"inputs": [],"name": "token1","outputs": [{"internalType": "address", "name": "", "type": "address"}],"stateMutability": "view","type": "function"}
+    {
+        "inputs": [],
+        "name": "slot0",
+        "outputs": [
+            {"internalType": "uint160", "name": "sqrtPriceX96", "type": "uint160"},
+            {"internalType": "int24", "name": "tick", "type": "int24"},
+            {"internalType": "uint16", "name": "observationIndex", "type": "uint16"},
+            {"internalType": "uint16", "name": "observationCardinality", "type": "uint16"},
+            {"internalType": "uint16", "name": "observationCardinalityNext", "type": "uint16"},
+            {"internalType": "uint8", "name": "feeProtocol", "type": "uint8"},
+            {"internalType": "bool", "name": "unlocked", "type": "bool"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "token0",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "token1",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
 ]
-""") # Minimal ABI, nur relevante Teile für slot0, token0, token1
+""")
 
 # Minimal ABI für ERC20 (nur decimals und symbol)
 ERC20_ABI_MINIMAL = json.loads("""
@@ -39,7 +63,6 @@ ERC20_ABI_MINIMAL = json.loads("""
 
 
 def get_active_position_id(filename=CONFIG_FILE_POSITIONS):
-    # Vereinfachte Funktion, die nur die ID der ersten gültigen Zeile zurückgibt
     try:
         if os.path.exists(filename):
             with open(filename, 'r') as f:
@@ -47,18 +70,17 @@ def get_active_position_id(filename=CONFIG_FILE_POSITIONS):
                     line = line.strip()
                     if not line or line.startswith('#'): continue
                     parts = line.split(',')
-                    if len(parts) >= 1: # Brauchen mindestens die ID
+                    if len(parts) >= 1: 
                         try:
                             return int(parts[0].strip())
                         except ValueError:
-                            continue # Ungültige ID, nächste Zeile versuchen
+                            continue 
         return None
     except Exception as e:
         print(f"Fehler beim Lesen der Position ID aus '{filename}': {e}")
         return None
 
 def sqrt_price_x96_to_price(sqrt_price_x96, token0_decimals, token1_decimals, is_token0_base=False):
-    # is_token0_base=False -> Preis von Token0 in Einheiten von Token1 (z.B. WBTC pro WETH)
     price_ratio = (sqrt_price_x96 / (2**96)) ** 2
     if is_token0_base:
         return price_ratio / (10 ** (token1_decimals - token0_decimals))
@@ -84,64 +106,54 @@ def main():
     
     print(f"Aktive Position ID: {active_nft_id}")
 
-    # Lese Token-Details (Symbole, Dezimalstellen) aus fees_data.json für die aktive Position
-    # Dies vermeidet zusätzliche RPC-Calls für Token-Verträge hier.
-    # Alternativ: Diese Details könnten auch aus einer zentraleren Config oder dem Pool-Vertrag selbst kommen.
     token0_decimals, token1_decimals = None, None
-    base_token_symbol, quote_token_symbol = "TOKEN1", "TOKEN0" # Standard, falls nicht gefunden
-    PRICE_PRESENTATION_IS_TOKEN0_BASE = False # Standard: Preis von Token0 pro Token1
+    base_token_symbol, quote_token_symbol = "TOKEN1", "TOKEN0" 
+    PRICE_PRESENTATION_IS_TOKEN0_BASE = False 
+    
+    # Hole Token-Details direkt vom Pool-Vertrag
+    try:
+        pool_contract_for_tokens = w3.eth.contract(address=WETH_WBTC_005_POOL_ADDRESS_ARBITRUM, abi=UNISWAP_V3_POOL_ABI_MINIMAL)
+        token0_address = pool_contract_for_tokens.functions.token0().call()
+        token1_address = pool_contract_for_tokens.functions.token1().call()
 
-    if os.path.exists(FEES_DATA_FILE):
-        with open(FEES_DATA_FILE, 'r') as f:
-            all_fees_data = json.load(f)
-            position_key = f"position_{active_nft_id}"
-            if position_key in all_fees_data and all_fees_data[position_key].get("is_active"):
-                pos_data = all_fees_data[position_key]
-                # Versuche, Dezimalstellen und Symbole aus dem neuesten History-Eintrag zu bekommen,
-                # oder von der Positionsebene, falls dort gespeichert.
-                # Für dieses Skript ist es am einfachsten, wenn sie auf Positionsebene stehen.
-                # Annahme: tracker.py speichert token_pair_symbols auf Positionsebene.
-                # Und wir brauchen die Dezimalstellen, die nicht direkt in fees_data.json stehen.
-                # Wir müssen sie vom Pool holen oder annehmen.
-                # Für WBTC/WETH: WBTC (Token0) = 8, WETH (Token1) = 18
-                # Besser: Hole sie direkt vom Pool-Vertrag einmalig hier.
-                
-                pool_contract_for_tokens = w3.eth.contract(address=WETH_WBTC_005_POOL_ADDRESS_ARBITRUM, abi=UNISWAP_V3_POOL_ABI_MINIMAL)
-                token0_address = pool_contract_for_tokens.functions.token0().call()
-                token1_address = pool_contract_for_tokens.functions.token1().call()
+        token0_contract = w3.eth.contract(address=token0_address, abi=ERC20_ABI_MINIMAL)
+        token1_contract = w3.eth.contract(address=token1_address, abi=ERC20_ABI_MINIMAL)
+        
+        token0_decimals = token0_contract.functions.decimals().call()
+        token1_decimals = token1_contract.functions.decimals().call()
+        t0_sym = token0_contract.functions.symbol().call()
+        t1_sym = token1_contract.functions.symbol().call()
 
-                token0_contract = w3.eth.contract(address=token0_address, abi=ERC20_ABI_MINIMAL)
-                token1_contract = w3.eth.contract(address=token1_address, abi=ERC20_ABI_MINIMAL)
-                
-                token0_decimals = token0_contract.functions.decimals().call()
-                token1_decimals = token1_contract.functions.decimals().call()
-                t0_sym = token0_contract.functions.symbol().call()
-                t1_sym = token1_contract.functions.symbol().call()
-
-                if PRICE_PRESENTATION_IS_TOKEN0_BASE: # Preis von Token1 in Token0
-                    base_token_symbol = t0_sym
-                    quote_token_symbol = t1_sym
-                else: # Preis von Token0 in Token1
-                    base_token_symbol = t1_sym
-                    quote_token_symbol = t0_sym
-                print(f"  Token Details: {t0_sym}({token0_decimals}) / {t1_sym}({token1_decimals})")
-
-
-    if token0_decimals is None or token1_decimals is None:
-        print("Fehler: Konnte Token-Dezimalstellen nicht ermitteln. Verwende Standardwerte oder breche ab.")
-        # Fallback oder Abbruch hier, für WBTC/WETH kennen wir sie:
-        if base_token_symbol.upper() == "WETH" and quote_token_symbol.upper() == "WBTC": # WBTC pro WETH
-            token0_decimals = 8  # WBTC
-            token1_decimals = 18 # WETH
-        elif base_token_symbol.upper() == "WBTC" and quote_token_symbol.upper() == "WETH": # WETH pro WBTC
-            token0_decimals = 8  # WBTC
-            token1_decimals = 18 # WETH
+        if PRICE_PRESENTATION_IS_TOKEN0_BASE: 
+            base_token_symbol = t0_sym
+            quote_token_symbol = t1_sym
+        else: 
+            base_token_symbol = t1_sym
+            quote_token_symbol = t0_sym
+        print(f"  Token Details: {t0_sym}({token0_decimals}) / {t1_sym}({token1_decimals})")
+    except Exception as e:
+        print(f"Fehler beim Holen der Token-Details vom Pool: {e}")
+        # Fallback für bekannte Paare, wenn RPC Calls fehlschlagen
+        if WETH_WBTC_005_POOL_ADDRESS_ARBITRUM.lower() == "0x2f5e87C9312fa29aed5c179E456625D79015299c".lower(): # WBTC/WETH
+            token0_decimals = 8  # WBTC ist normalerweise Token0 in diesem Pool
+            token1_decimals = 18 # WETH ist normalerweise Token1
+            t0_sym = "WBTC"
+            t1_sym = "WETH"
+            if PRICE_PRESENTATION_IS_TOKEN0_BASE: 
+                base_token_symbol = t0_sym
+                quote_token_symbol = t1_sym
+            else: 
+                base_token_symbol = t1_sym
+                quote_token_symbol = t0_sym
+            print(f"  Fallback Token Details verwendet: {t0_sym}({token0_decimals}) / {t1_sym}({token1_decimals})")
         else:
-            print("Unbekanntes Token-Paar für Fallback-Dezimalstellen. Breche ab.")
+            print("Unbekannter Pool für Fallback-Token-Details. Breche ab.")
             return
 
+    if token0_decimals is None or token1_decimals is None: # Sollte durch Fallback nicht mehr passieren für bekannten Pool
+        print("Fehler: Konnte Token-Dezimalstellen endgültig nicht ermitteln. Breche ab.")
+        return
 
-    # Aktuellen Marktpreis vom Pool abrufen
     current_market_price = None
     try:
         pool_contract = w3.eth.contract(address=WETH_WBTC_005_POOL_ADDRESS_ARBITRUM, abi=UNISWAP_V3_POOL_ABI_MINIMAL)
@@ -151,15 +163,14 @@ def main():
         print(f"  Aktueller Marktpreis: {current_market_price:.6f} {quote_token_symbol}/{base_token_symbol}")
     except Exception as e:
         print(f"Fehler beim Abrufen des Marktpreises: {e}")
-        return # Ohne Preis kein Update
+        return 
 
     if current_market_price is None:
         print("Konnte Marktpreis nicht ermitteln. Kein Update für price_ticks.json.")
         return
 
-    # Daten für price_ticks.json vorbereiten und alte Einträge entfernen
     new_price_entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"), # ISO 8601 mit Z
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "price": current_market_price,
         "base_token": base_token_symbol,
         "quote_token": quote_token_symbol
@@ -180,11 +191,10 @@ def main():
     filtered_price_ticks = []
     for entry in price_ticks_data:
         try:
-            # Stelle sicher, dass der Timestamp korrekt als UTC-aware datetime-Objekt geparst wird
             entry_ts_str = entry["timestamp"]
             if entry_ts_str.endswith("Z"):
                 entry_ts = datetime.fromisoformat(entry_ts_str[:-1] + "+00:00")
-            else: # Fallback falls 'Z' fehlt, aber sollte nicht passieren
+            else: 
                 entry_ts = datetime.fromisoformat(entry_ts_str).replace(tzinfo=timezone.utc)
 
             if entry_ts >= cutoff_date_utc:
@@ -192,7 +202,6 @@ def main():
         except Exception as e:
             print(f"Warnung: Konnte Timestamp '{entry.get('timestamp')}' nicht parsen oder vergleichen: {e}. Eintrag wird ignoriert.")
             continue
-
 
     filtered_price_ticks.append(new_price_entry)
 
