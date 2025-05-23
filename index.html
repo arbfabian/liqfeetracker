@@ -253,15 +253,17 @@
                      return;
                 }
 
-                console.log("Verwendete latestRange für Filterung:", latestRange); // WICHTIG
+                let latestRange = null;
+                const historyDatesForRange = Object.keys(positionData.history || {}).sort((a,b) => new Date(b) - new Date(a));
+                if (historyDatesForRange.length > 0 && positionData.history[historyDatesForRange[0]].position_range) {
+                    latestRange = positionData.history[historyDatesForRange[0]].position_range;
+                }
 
                 const relevantPriceTicks = allPriceTicks.filter(tick => 
-                    latestRange && 
-                    tick.base_token === latestRange.base_token_for_price &&
+                    latestRange && tick.base_token === latestRange.base_token_for_price &&
                     tick.quote_token === latestRange.quote_token_for_price
                 );
-                console.log("Gefilterte relevantPriceTicks:", JSON.parse(JSON.stringify(relevantPriceTicks))); // WICHTIG
-
+                
                 if (relevantPriceTicks.length === 0) {
                     chartCanvas.outerHTML = "<p>Keine passenden Preisdaten für Chart.</p>";
                     return;
