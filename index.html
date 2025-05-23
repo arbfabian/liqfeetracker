@@ -7,15 +7,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 15px;} /* Margin reduziert */
+        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 15px;}
         
-        #average-fees-summary { /* Styling für Durchschnitts-Block */
+        #average-fees-summary {
             text-align:center; 
             margin-bottom:25px; 
             padding:15px; 
             background-color:#e9ecef; 
             border-radius:8px;
-            max-width: 600px; /* Begrenzt Breite */
+            max-width: 600px; 
             margin-left: auto;
             margin-right: auto;
         }
@@ -25,7 +25,6 @@
         #average-fees-summary p {
             margin:5px 0; font-size: 0.95em;
         }
-
 
         .positions-overview, .positions-archive {
             display: flex;
@@ -107,10 +106,12 @@
         .active-position { border-left: 5px solid #27ae60; }
         .active-position h2 { color: #27ae60; }
 
-        /* Stile für Time in Range in Detailansicht */
         .time-in-range-display {
             text-align:center; margin-bottom:15px; padding:12px; background-color:#e7f3fe; 
             border:1px solid #b3d7ff; border-radius:5px;
+            width: 90%; 
+            max-width: 500px; 
+            box-sizing: border-box;
         }
         .time-in-range-display p {
             margin:0; font-size:1.1em; color:#004085;
@@ -125,17 +126,59 @@
             font-size: 0.9em; color: #555;
          }
 
-
         .position-block { 
-            border: 1px solid #ccc; padding: 20px; margin-bottom: 25px;
-            border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 1px solid #ccc; 
+            padding: 15px; 
+            margin-bottom: 25px;
+            border-radius: 8px; 
+            background-color: #fff; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             animation: fadeInDetail 0.4s ease-out forwards;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            text-align: center; 
         }
-        .position-title { font-size: 1.6em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #e8eff5; color: #2c3e50; font-weight: bold; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
+        .position-title { 
+            font-size: 1.4em; 
+            margin-bottom: 15px; 
+            color: #34495e; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 5px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            text-align: center; 
+        }
+        .position-block table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            max-width: 600px; 
+            margin-top: 15px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1); 
+            background-color: #fff; 
+        }
+        .position-block th, .position-block td { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            text-align: left; 
+        }
+        .position-block th { 
+            background-color: #e8eff5; 
+            color: #2c3e50; 
+            font-weight: bold; 
+        }
+        .position-block tr:nth-child(even) { 
+            background-color: #f9f9f9; 
+        }
+        .position-block td:nth-child(2), 
+        .position-block td:nth-child(3),
+        .position-block td:nth-child(4) {
+            text-align: right;
+        }
+        .position-block td:first-child { 
+            text-align: center; 
+        }
         
         #data-container p.error-message { color: red; font-weight: bold; text-align:center; }
         #data-container p.loading-message { text-align: center; font-size: 1.1em; }
@@ -153,6 +196,32 @@
         @keyframes fadeInDetail { 
             from { opacity: 0; transform: scale(0.98); }
             to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .position-block {
+                padding: 10px; 
+            }
+            .position-title {
+                font-size: 1.2em; 
+            }
+            .position-block th, .position-block td {
+                padding: 6px; 
+                font-size: 0.9em; 
+            }
+            .time-in-range-display {
+                width: 95%; 
+            }
+            #average-fees-summary {
+                padding: 10px;
+                margin-bottom: 20px;
+            }
+            #average-fees-summary h3 {
+                font-size: 1.1em;
+            }
+             #average-fees-summary p {
+                font-size: 0.9em;
+            }
         }
     </style>
 </head>
