@@ -86,7 +86,7 @@ def main():
     print(f"Aktive Position ID: {active_nft_id}")
 
     t0_dec, t1_dec = None, None
-    PRICE_PRESENTATION_IS_TOKEN0_BASE = True # WICHTIG: Für WETH pro WBTC (Base=Token0=WBTC)
+    PRICE_PRESENTATION_IS_TOKEN0_BASE = False # WICHTIG: Für WETH pro WBTC (Base=Token0=WBTC)
     base_sym_for_json, quote_sym_for_json = "", ""
 
 

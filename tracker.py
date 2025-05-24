@@ -294,7 +294,7 @@ def main():
         elif current_unclaimed_token1_usd_val is not None: 
             current_total_unclaimed_usd_val = current_unclaimed_token1_usd_val
 
-        PRICE_PRESENTATION_IS_TOKEN0_BASE = True 
+        PRICE_PRESENTATION_IS_TOKEN0_BASE = False 
         
         pool_address_for_position = WETH_WBTC_005_POOL_ADDRESS_ARBITRUM
         price_base_token_symbol_for_json = ""
