@@ -242,17 +242,13 @@
 
         async function createPriceChart(canvasId, positionData) {
             const chartCanvas = document.getElementById(canvasId);
-            if (!chartCanvas) { 
-                console.error(`Canvas mit ID ${canvasId} nicht gefunden.`);
-                return; 
-            }
+            if (!chartCanvas) { return; }
             const ctx = chartCanvas.getContext('2d');
 
             try {
                 const priceTicksResponse = await fetch('price_ticks.json?v=' + new Date().getTime());
                 if (!priceTicksResponse.ok) {
                     chartCanvas.parentElement.innerHTML = "<p>Preisdaten-Datei (price_ticks.json) nicht geladen.</p>";
-                    console.error("Konnte price_ticks.json nicht laden", priceTicksResponse.status);
                     return;
                 }
                 const allPriceTicks = await priceTicksResponse.json();
@@ -353,9 +349,9 @@
                                    (!(allData[a].is_active === true) && allData[b].is_active === true) ? 1 : 
                                    (new Date(allData[b].last_updated_utc || 0) - new Date(allData[a].last_updated_utc || 0)));
                 
-                // ----- ANPASSUNG FÜR DURCHSCHNITTSBERECHNUNG START -----
+                // ----- ANPASSUNG FÜR DURCHSCHNITTSBERECHNUNG (NUR AKTIVE POSITION, NUR USD) START -----
                 let averageDailyHtml = '<div id="average-fees-summary">';
-                averageDailyHtml += '<h3>⌀ tägliche Einnahmen</h3>'; // Geänderte Überschrift
+                averageDailyHtml += '<h3>⌀ tägliche Einnahmen</h3>';
 
                 const activePositionKey = sortedPositionKeys.find(key => allData[key].is_active === true);
                 
@@ -378,7 +374,7 @@
                     }
 
                     if (daysInHistoryForActivePosition > 0) {
-                        averageDailyHtml += `<p><strong>Total USD:</strong> $${(totalEarnedUsdForActivePosition / daysInHistoryForActivePosition).toFixed(2)}</p>`;
+                        averageDailyHtml += `<p style="font-size: 1.1em; font-weight: bold;">$${(totalEarnedUsdForActivePosition / daysInHistoryForActivePosition).toFixed(2)}</p>`;
                     } else {
                         averageDailyHtml += "<p>Keine Daten für Durchschnittsberechnung der aktiven Position vorhanden.</p>";
                     }
@@ -411,23 +407,40 @@
                         profitPercText = `<span style="color:${perc >= 0 ? 'green':'red'};">${perc.toFixed(2)}%</span>`;
                     }
 
+                    // ----- ANPASSUNG FÜR DAYS OPEN TEXT START -----
                     let daysOpenText = 'N/A';
                     if (posData.history) {
                         const localHistoryDates = Object.keys(posData.history);
                         if (localHistoryDates.length > 0) {
-                            localHistoryDates.sort((a, b) => new Date(a) - new Date(b));
+                            localHistoryDates.sort((a, b) => new Date(a) - new Date(b)); // Aufsteigend für ältestes Datum
                             const firstEntryDate = new Date(localHistoryDates[0]);
-                            const lastHistoryDateForArchive = new Date(localHistoryDates[localHistoryDates.length - 1]);
-                            const endDate = posData.is_active === true ? new Date() : lastHistoryDateForArchive;
+                            
+                            let endDate;
+                            if (posData.is_active === true) {
+                                endDate = new Date(); // Heute für aktive Positionen
+                            } else {
+                                // Für archivierte Positionen, nimm das Datum des letzten Eintrags in der History
+                                const lastEntryDateStr = localHistoryDates[localHistoryDates.length - 1]; // Schon sortiert
+                                endDate = new Date(lastEntryDateStr);
+                            }
+                            
                             const startDateClean = new Date(firstEntryDate.getFullYear(), firstEntryDate.getMonth(), firstEntryDate.getDate());
                             const endDateClean = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
                             const diffTime = endDateClean.getTime() - startDateClean.getTime();
                             let calculatedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                            if (calculatedDays <= 0 && localHistoryDates.length > 0) calculatedDays = 1;
-                            daysOpenText = `${calculatedDays} Tagen`;
-                        } else if (posData.is_active === true) { daysOpenText = '1 Tag';} 
-                        else { daysOpenText = '0 Tage'; }
+                            
+                            if (calculatedDays <= 0) { // Sollte bei vorhandener History > 0 sein
+                                calculatedDays = 1;
+                            }
+                            daysOpenText = `${calculatedDays} Tag(e)`; // Geändert von Tagen zu Tag(e)
+                        } else if (posData.is_active === true) { 
+                            daysOpenText = '1 Tag(e)'; // Neu eröffnet, noch keine History
+                        } else { 
+                            daysOpenText = '0 Tag(e)'; // Keine History, nicht aktiv
+                        }
                     }
+                    // ----- ANPASSUNG FÜR DAYS OPEN TEXT ENDE -----
                     
                     const chartCanvasId = `priceChart_${positionIdKey}`;
                     let chartAndRecentFeesHtml = '<div class="chart-and-recent-fees">';
@@ -470,7 +483,7 @@
                 }
                 overviewHtml += '</div>'; archiveHtml += '</div>';
 
-                let finalHtml = averageDailyHtml; // Durchschnitts-HTML zuerst
+                let finalHtml = averageDailyHtml;
                 if (hasActive) finalHtml += overviewHtml;
                 else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
                 if (hasArchived) finalHtml += archiveHtml;
@@ -511,7 +524,6 @@
             let detailHtml = `<div class="position-block">`; 
             detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
             
-            // ANPASSUNG FÜR TIME IN RANGE
             if (positionData.time_in_range_24h_percentage !== undefined && positionData.time_in_range_24h_percentage !== null) {
                 detailHtml += `<div class="time-in-range-display">`;
                 detailHtml += `<p><strong>Time in Range (letzte 24h): <span>${parseFloat(positionData.time_in_range_24h_percentage).toFixed(1)}%</span></strong></p>`;
@@ -521,7 +533,6 @@
                  detailHtml += `<p class="data-unavailable">Time in Range (letzte 24h): Daten nicht verfügbar.</p>`;
                  detailHtml += `</div>`;
             }
-            // ENDE ANPASSUNG TIME IN RANGE
 
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
