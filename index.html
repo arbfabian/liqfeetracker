@@ -256,7 +256,6 @@
                     return;
                 }
                 const allPriceTicks = await priceTicksResponse.json();
-                // DEBUG: Zeige alle geladenen Ticks
                 console.log(`DEBUG für ${canvasId} - Geladene allPriceTicks:`, JSON.parse(JSON.stringify(allPriceTicks))); 
 
 
@@ -271,7 +270,6 @@
                 if (historyDatesForRange.length > 0 && positionData.history[historyDatesForRange[0]].position_range) {
                     latestRange = positionData.history[historyDatesForRange[0]].position_range;
                 }
-                // DEBUG: Zeige die Range-Daten
                 console.log(`DEBUG für ${canvasId} - Verwendete latestRange für Filterung:`, latestRange); 
 
                 const relevantPriceTicks = allPriceTicks.filter(tick => 
@@ -279,7 +277,6 @@
                     tick.base_token === latestRange.base_token_for_price &&
                     tick.quote_token === latestRange.quote_token_for_price
                 );
-                // DEBUG: Zeige die gefilterten Ticks
                 console.log(`DEBUG für ${canvasId} - Gefilterte relevantPriceTicks:`, JSON.parse(JSON.stringify(relevantPriceTicks))); 
                 
                 if (relevantPriceTicks.length === 0) {
@@ -317,10 +314,6 @@
                     });
                 }
                 
-                // DEBUG: Zeige Chart-Daten und Konfiguration
-                // console.log(`DEBUG für ${canvasId} - Chart Data für Chart.js:`, JSON.parse(JSON.stringify(chartData)));
-                // console.log(`DEBUG für ${canvasId} - Chart Config für Chart.js:`, JSON.parse(JSON.stringify(config))); // config wird erst unten definiert
-
                 const config = {
                     type: 'line', data: chartData,
                     options: {
@@ -329,7 +322,7 @@
                         plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
                     }
                 };
-                console.log(`DEBUG für ${canvasId} - Chart Config für Chart.js:`, JSON.parse(JSON.stringify(config))); // Jetzt ist config definiert
+                console.log(`DEBUG für ${canvasId} - Chart Config für Chart.js:`, JSON.parse(JSON.stringify(config)));
                 
                 if (activeCharts[canvasId]) { activeCharts[canvasId].destroy(); }
                 activeCharts[canvasId] = new Chart(ctx, config);
@@ -354,52 +347,46 @@
                 if (Object.keys(allData).filter(key => key.startsWith("position_")).length === 0) {
                     dataContainer.innerHTML = '<p class="loading-message">Keine Positionsdaten.</p>'; return;
                 }
-
-                let totalDaysAcrossAllPositions = 0;
-                let totalEarnedToken0AcrossAll = 0;
-                let totalEarnedToken1AcrossAll = 0;
-                let totalEarnedUsdAcrossAll = 0;
-                let defaultToken0Symbol = "Token0";
-                let defaultToken1Symbol = "Token1";
-                let foundSymbols = false;
-
+                
                 const sortedPositionKeys = Object.keys(allData).filter(key => key.startsWith("position_"))
                     .sort((a, b) => (allData[a].is_active === true && !(allData[b].is_active === true)) ? -1 : 
                                    (!(allData[a].is_active === true) && allData[b].is_active === true) ? 1 : 
                                    (new Date(allData[b].last_updated_utc || 0) - new Date(allData[a].last_updated_utc || 0)));
+                
+                // ----- ANPASSUNG FÜR DURCHSCHNITTSBERECHNUNG START -----
+                let averageDailyHtml = '<div id="average-fees-summary">';
+                averageDailyHtml += '<h3>⌀ tägliche Einnahmen</h3>'; // Geänderte Überschrift
 
-                for (const positionIdKey of sortedPositionKeys) {
-                    const posData = allData[positionIdKey];
-                    if (posData.history) {
-                        const numDaysForPosition = Object.keys(posData.history).length;
-                        if (numDaysForPosition > 0) {
-                            totalDaysAcrossAllPositions += numDaysForPosition;
-                            if (!foundSymbols && posData.token_pair_symbols) {
-                                const symbols = posData.token_pair_symbols.split('/');
-                                if(symbols.length === 2) {defaultToken0Symbol = symbols[0]; defaultToken1Symbol = symbols[1]; foundSymbols = true;}
-                            }
-                            for (const date in posData.history) {
-                                const dayData = posData.history[date].daily_earned_fees;
-                                if (dayData) {
-                                    if (dayData.token0_actual != null) totalEarnedToken0AcrossAll += parseFloat(dayData.token0_actual);
-                                    if (dayData.token1_actual != null) totalEarnedToken1AcrossAll += parseFloat(dayData.token1_actual);
-                                    if (dayData.total_usd != null) totalEarnedUsdAcrossAll += parseFloat(dayData.total_usd);
+                const activePositionKey = sortedPositionKeys.find(key => allData[key].is_active === true);
+                
+                if (activePositionKey) {
+                    const activePosData = allData[activePositionKey];
+                    let totalEarnedUsdForActivePosition = 0;
+                    let daysInHistoryForActivePosition = 0;
+
+                    if (activePosData.history) {
+                        const history = activePosData.history;
+                        daysInHistoryForActivePosition = Object.keys(history).length;
+                        if (daysInHistoryForActivePosition > 0) {
+                            for (const date in history) {
+                                const dayData = history[date].daily_earned_fees;
+                                if (dayData && dayData.total_usd != null) {
+                                    totalEarnedUsdForActivePosition += parseFloat(dayData.total_usd);
                                 }
                             }
                         }
                     }
-                }
 
-                let averageDailyHtml = '<div id="average-fees-summary">';
-                averageDailyHtml += '<h3>Durchschnittliche tägliche Einnahmen (alle Positionen):</h3>';
-                if (totalDaysAcrossAllPositions > 0) {
-                    averageDailyHtml += `<p><strong>${defaultToken0Symbol}:</strong> ${(totalEarnedToken0AcrossAll / totalDaysAcrossAllPositions).toFixed(8)}</p>`;
-                    averageDailyHtml += `<p><strong>${defaultToken1Symbol}:</strong> ${(totalEarnedToken1AcrossAll / totalDaysAcrossAllPositions).toFixed(8)}</p>`;
-                    averageDailyHtml += `<p><strong>Total USD:</strong> $${(totalEarnedUsdAcrossAll / totalDaysAcrossAllPositions).toFixed(2)}</p>`;
+                    if (daysInHistoryForActivePosition > 0) {
+                        averageDailyHtml += `<p><strong>Total USD:</strong> $${(totalEarnedUsdForActivePosition / daysInHistoryForActivePosition).toFixed(2)}</p>`;
+                    } else {
+                        averageDailyHtml += "<p>Keine Daten für Durchschnittsberechnung der aktiven Position vorhanden.</p>";
+                    }
                 } else {
-                    averageDailyHtml += "<p>Keine Daten für Durchschnittsberechnung vorhanden.</p>";
+                    averageDailyHtml += "<p>Keine aktive Position für Durchschnittsberechnung gefunden.</p>";
                 }
                 averageDailyHtml += '</div>';
+                // ----- ANPASSUNG FÜR DURCHSCHNITTSBERECHNUNG ENDE -----
                 
                 let overviewHtml = '<div class="positions-overview section-container">';
                 let archiveHtml = '<div class="positions-archive section-container"><h2 class="archive-title">Archivierte Positionen</h2>';
@@ -483,7 +470,7 @@
                 }
                 overviewHtml += '</div>'; archiveHtml += '</div>';
 
-                let finalHtml = averageDailyHtml;
+                let finalHtml = averageDailyHtml; // Durchschnitts-HTML zuerst
                 if (hasActive) finalHtml += overviewHtml;
                 else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
                 if (hasArchived) finalHtml += archiveHtml;
@@ -524,6 +511,7 @@
             let detailHtml = `<div class="position-block">`; 
             detailHtml += `<h2 class="position-title">Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'}) ${positionData.is_active === true ? '' : '<small style="color:#7f8c8d;">(Archiviert)</small>'}</h2>`;
             
+            // ANPASSUNG FÜR TIME IN RANGE
             if (positionData.time_in_range_24h_percentage !== undefined && positionData.time_in_range_24h_percentage !== null) {
                 detailHtml += `<div class="time-in-range-display">`;
                 detailHtml += `<p><strong>Time in Range (letzte 24h): <span>${parseFloat(positionData.time_in_range_24h_percentage).toFixed(1)}%</span></strong></p>`;
@@ -533,6 +521,7 @@
                  detailHtml += `<p class="data-unavailable">Time in Range (letzte 24h): Daten nicht verfügbar.</p>`;
                  detailHtml += `</div>`;
             }
+            // ENDE ANPASSUNG TIME IN RANGE
 
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
