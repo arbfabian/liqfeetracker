@@ -433,11 +433,11 @@
                             if (calculatedDays <= 0) { // Sollte bei vorhandener History > 0 sein
                                 calculatedDays = 1;
                             }
-                            daysOpenText = `${calculatedDays} Tag(e)`; // Geändert von Tagen zu Tag(e)
+                            daysOpenText = `${calculatedDays} Tage`;
                         } else if (posData.is_active === true) { 
-                            daysOpenText = '1 Tag(e)'; // Neu eröffnet, noch keine History
+                            daysOpenText = '1 Tage'; // Neu eröffnet, noch keine History
                         } else { 
-                            daysOpenText = '0 Tag(e)'; // Keine History, nicht aktiv
+                            daysOpenText = '0 Tage'; // Keine History, nicht aktiv
                         }
                     }
                     // ----- ANPASSUNG FÜR DAYS OPEN TEXT ENDE -----
