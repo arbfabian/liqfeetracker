@@ -9,24 +9,27 @@
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 15px;}
         
-        #average-fees-summary {
+        #average-fees-summary, #total-profit-summary {
             text-align:center; 
-            margin-bottom:25px; 
             padding:15px; 
             background-color:#e9ecef; 
             border-radius:8px;
             max-width: 600px; 
             margin-left: auto;
             margin-right: auto;
-            animation: fadeIn 0.5s 0.1s ease-out forwards;
+            animation: fadeIn 0.5s ease-out forwards;
             opacity: 0; 
         }
-        #average-fees-summary h3 {
+        #average-fees-summary { margin-bottom: 10px; animation-delay: 0.1s; }
+        #total-profit-summary { margin-bottom: 25px; background-color: #dde5ed; animation-delay: 0.15s; }
+
+        #average-fees-summary h3, #total-profit-summary h3 {
             margin-top:0; margin-bottom: 10px; color:#495057; font-size: 1.2em;
         }
-        #average-fees-summary p {
+        #average-fees-summary p, #total-profit-summary p {
             margin:5px 0; font-size: 0.95em;
         }
+        #total-profit-summary p { font-size: 1.1em; font-weight: bold; }
 
         .positions-overview, .positions-archive {
             display: flex;
@@ -106,7 +109,7 @@
         }
         .details-button:hover, .back-button:hover { background-color: #2980b9; }
 
-        .archived-position { opacity: 0.65; border-left: 5px solid #95a5a6; }
+        .archived-position { opacity: 0.75; border-left: 5px solid #95a5a6; }
         .active-position { border-left: 5px solid #27ae60; }
         .active-position h2 { color: #27ae60; }
 
@@ -217,14 +220,14 @@
             .time-in-range-display {
                 width: 95%; 
             }
-            #average-fees-summary {
+            #average-fees-summary, #total-profit-summary {
                 padding: 10px;
-                margin-bottom: 20px;
+                margin-bottom: 15px;
             }
-            #average-fees-summary h3 {
+            #average-fees-summary h3, #total-profit-summary h3 {
                 font-size: 1.1em;
             }
-             #average-fees-summary p {
+             #average-fees-summary p, #total-profit-summary p {
                 font-size: 0.9em;
             }
         }
@@ -252,12 +255,9 @@
                     return;
                 }
                 const allPriceTicks = await priceTicksResponse.json();
-                console.log(`DEBUG für ${canvasId} - Geladene allPriceTicks:`, JSON.parse(JSON.stringify(allPriceTicks))); 
-
-
+                
                 if (!Array.isArray(allPriceTicks)) {
                      chartCanvas.parentElement.innerHTML = "<p>Ungültiges Format der Preisdaten.</p>";
-                     console.error("DEBUG: price_ticks.json ist keine Liste.");
                      return;
                 }
 
@@ -266,14 +266,12 @@
                 if (historyDatesForRange.length > 0 && positionData.history[historyDatesForRange[0]].position_range) {
                     latestRange = positionData.history[historyDatesForRange[0]].position_range;
                 }
-                console.log(`DEBUG für ${canvasId} - Verwendete latestRange für Filterung:`, latestRange); 
-
+                
                 const relevantPriceTicks = allPriceTicks.filter(tick => 
                     latestRange && 
                     tick.base_token === latestRange.base_token_for_price &&
                     tick.quote_token === latestRange.quote_token_for_price
                 );
-                console.log(`DEBUG für ${canvasId} - Gefilterte relevantPriceTicks:`, JSON.parse(JSON.stringify(relevantPriceTicks))); 
                 
                 if (relevantPriceTicks.length === 0) {
                     chartCanvas.parentElement.innerHTML = "<p>Keine passenden Preisdaten für Chart.</p>";
@@ -318,7 +316,6 @@
                         plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
                     }
                 };
-                console.log(`DEBUG für ${canvasId} - Chart Config für Chart.js:`, JSON.parse(JSON.stringify(config)));
                 
                 if (activeCharts[canvasId]) { activeCharts[canvasId].destroy(); }
                 activeCharts[canvasId] = new Chart(ctx, config);
@@ -349,9 +346,8 @@
                                    (!(allData[a].is_active === true) && allData[b].is_active === true) ? 1 : 
                                    (new Date(allData[b].last_updated_utc || 0) - new Date(allData[a].last_updated_utc || 0)));
                 
-                // ----- ANPASSUNG FÜR DURCHSCHNITTSBERECHNUNG (NUR AKTIVE POSITION, NUR USD) START -----
                 let averageDailyHtml = '<div id="average-fees-summary">';
-                averageDailyHtml += '<h3>⌀ tägliche Einnahmen</h3>';
+                averageDailyHtml += '<h3>⌀ tägliche Einnahmen (aktive Position)</h3>';
 
                 const activePositionKey = sortedPositionKeys.find(key => allData[key].is_active === true);
                 
@@ -382,8 +378,8 @@
                     averageDailyHtml += "<p>Keine aktive Position für Durchschnittsberechnung gefunden.</p>";
                 }
                 averageDailyHtml += '</div>';
-                // ----- ANPASSUNG FÜR DURCHSCHNITTSBERECHNUNG ENDE -----
                 
+                let totalProfitAllPositionsUsd = 0;
                 let overviewHtml = '<div class="positions-overview section-container">';
                 let archiveHtml = '<div class="positions-archive section-container"><h2 class="archive-title">Archivierte Positionen</h2>';
                 let hasActive = false, hasArchived = false;
@@ -391,36 +387,35 @@
                 for (const positionIdKey of sortedPositionKeys) {
                     const posData = allData[positionIdKey];
                     const posNum = positionIdKey.replace('position_', '');
-                    let totalProfitUsd = 0;
+                    let currentPositionTotalProfitUsd = 0;
                     const historyDates = posData.history ? Object.keys(posData.history).sort((a, b) => new Date(b) - new Date(a)) : [];
 
                     historyDates.forEach(date => {
                         const dayData = posData.history[date];
                         if (dayData.daily_earned_fees && dayData.daily_earned_fees.total_usd != null) {
-                            totalProfitUsd += parseFloat(dayData.daily_earned_fees.total_usd);
+                            currentPositionTotalProfitUsd += parseFloat(dayData.daily_earned_fees.total_usd);
                         }
                     });
+                    totalProfitAllPositionsUsd += currentPositionTotalProfitUsd;
 
                     let profitPercText = 'N/A';
                     if (posData.initial_investment_usd && parseFloat(posData.initial_investment_usd) > 0) {
-                        const perc = (totalProfitUsd / parseFloat(posData.initial_investment_usd)) * 100;
+                        const perc = (currentPositionTotalProfitUsd / parseFloat(posData.initial_investment_usd)) * 100;
                         profitPercText = `<span style="color:${perc >= 0 ? 'green':'red'};">${perc.toFixed(2)}%</span>`;
                     }
-
-                    // ----- ANPASSUNG FÜR DAYS OPEN TEXT START -----
+                    
                     let daysOpenText = 'N/A';
                     if (posData.history) {
                         const localHistoryDates = Object.keys(posData.history);
                         if (localHistoryDates.length > 0) {
-                            localHistoryDates.sort((a, b) => new Date(a) - new Date(b)); // Aufsteigend für ältestes Datum
+                            localHistoryDates.sort((a, b) => new Date(a) - new Date(b));
                             const firstEntryDate = new Date(localHistoryDates[0]);
                             
                             let endDate;
                             if (posData.is_active === true) {
-                                endDate = new Date(); // Heute für aktive Positionen
+                                endDate = new Date();
                             } else {
-                                // Für archivierte Positionen, nimm das Datum des letzten Eintrags in der History
-                                const lastEntryDateStr = localHistoryDates[localHistoryDates.length - 1]; // Schon sortiert
+                                const lastEntryDateStr = localHistoryDates[localHistoryDates.length - 1];
                                 endDate = new Date(lastEntryDateStr);
                             }
                             
@@ -430,21 +425,28 @@
                             const diffTime = endDateClean.getTime() - startDateClean.getTime();
                             let calculatedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
                             
-                            if (calculatedDays <= 0) { // Sollte bei vorhandener History > 0 sein
+                            if (calculatedDays <= 0) { 
                                 calculatedDays = 1;
                             }
                             daysOpenText = `${calculatedDays} Tage`;
                         } else if (posData.is_active === true) { 
-                            daysOpenText = '1 Tage'; // Neu eröffnet, noch keine History
+                            daysOpenText = '1 Tag'; 
                         } else { 
-                            daysOpenText = '0 Tage'; // Keine History, nicht aktiv
+                            daysOpenText = '0 Tage'; 
                         }
                     }
-                    // ----- ANPASSUNG FÜR DAYS OPEN TEXT ENDE -----
                     
+                    const isActive = posData.is_active === true;
                     const chartCanvasId = `priceChart_${positionIdKey}`;
+                    let chartHtmlPart = '';
+                    if (isActive) {
+                        chartHtmlPart = `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>`;
+                    }
+
                     let chartAndRecentFeesHtml = '<div class="chart-and-recent-fees">';
-                    chartAndRecentFeesHtml += `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>`;
+                    if (isActive) {
+                        chartAndRecentFeesHtml += chartHtmlPart;
+                    }
                     chartAndRecentFeesHtml += `<p class="update-timestamp"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
                     chartAndRecentFeesHtml += '<div class="recent-fees-summary">';
                     chartAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px;">Letzte Gebühren:</p>';
@@ -461,13 +463,12 @@
                     }
                     chartAndRecentFeesHtml += '</div></div>';
 
-                    const isActive = posData.is_active === true;
                     let cardHtml = `
                         <div class="position-summary-card ${isActive ? 'active-position' : 'archived-position'}" data-position-id="${positionIdKey}">
                             <h2>Position ${posNum} ${isActive ? '' : '<small style="color:#7f8c8d;">(Archiv.)</small>'}</h2>
                             <div class="card-content">
                                 <p><strong>Paar:</strong> ${posData.token_pair_symbols || 'N/A'}</p>
-                                <p><strong>Gesamtprofit:</strong> <span style="color:${totalProfitUsd >= 0 ? 'green':'red'}; font-weight:bold;">${totalProfitUsd.toFixed(2)} USD</span></p>
+                                <p><strong>Gesamtprofit:</strong> <span style="color:${currentPositionTotalProfitUsd >= 0 ? 'green':'red'}; font-weight:bold;">${currentPositionTotalProfitUsd.toFixed(2)} USD</span></p>
                                 <p><strong>Profit %:</strong> ${profitPercText}</p>
                                 <p><strong>${isActive ? 'Offen seit':'Laufzeit'}:</strong> ${daysOpenText}</p>
                                 <p class="sub-info"><small>Initial: ${posData.initial_investment_usd ? parseFloat(posData.initial_investment_usd).toFixed(2) + ' USD':'N/A'}</small></p>
@@ -483,7 +484,13 @@
                 }
                 overviewHtml += '</div>'; archiveHtml += '</div>';
 
-                let finalHtml = averageDailyHtml;
+                let totalProfitSummaryHtml = `<div id="total-profit-summary">
+                                                <h3>Gesamtprofit aller Positionen</h3>
+                                                <p style="color:${totalProfitAllPositionsUsd >= 0 ? 'green':'red'};">$${totalProfitAllPositionsUsd.toFixed(2)}</p>
+                                              </div>`;
+
+                let finalHtml = averageDailyHtml + totalProfitSummaryHtml;
+
                 if (hasActive) finalHtml += overviewHtml;
                 else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
                 if (hasArchived) finalHtml += archiveHtml;
