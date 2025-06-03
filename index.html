@@ -6,34 +6,97 @@
     <title>Uniswap V3 LP Gebühren Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- FAVICON HINZUGEFÜGT -->
     <link rel="icon" href="favicon.jpg" type="image/jpeg">
 
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 15px;}
+        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 25px;} /* Mehr margin-bottom */
         
-        #average-fees-summary, #total-profit-summary {
-            text-align:center; 
-            padding:15px; 
-            background-color:#e9ecef; 
-            border-radius:8px;
-            max-width: 600px; 
-            margin-left: auto;
-            margin-right: auto;
-            animation: fadeIn 0.5s ease-out forwards;
-            opacity: 0; 
+        /* --- NEU: Kompakter Statistik-Block --- */
+        #compact-stats-container {
+            display: flex;
+            justify-content: space-around; /* Oder space-between für mehr Abstand */
+            gap: 15px; /* Abstand zwischen den Blöcken */
+            max-width: 700px;
+            margin: 0 auto 25px auto; /* Zentriert und mit Abstand nach unten */
+            flex-wrap: wrap; /* Umbruch bei kleineren Bildschirmen */
         }
-        #average-fees-summary { margin-bottom: 10px; animation-delay: 0.1s; }
-        #total-profit-summary { margin-bottom: 25px; background-color: #dde5ed; animation-delay: 0.15s; }
 
-        #average-fees-summary h3, #total-profit-summary h3 {
-            margin-top:0; margin-bottom: 10px; color:#495057; font-size: 1.2em;
+        .compact-stat-item {
+            flex-basis: calc(50% - 10px); /* Bei 2 Items, mit gap berücksichtigt */
+            min-width: 280px; /* Mindestbreite, bevor Umbruch sinnvoll wird */
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
         }
-        #average-fees-summary p, #total-profit-summary p {
-            margin:5px 0; font-size: 0.95em;
+        .compact-stat-item:nth-child(1) { animation-delay: 0.1s; } /* Gesamtprofit */
+        .compact-stat-item:nth-child(2) { animation-delay: 0.15s; background-color: #dde5ed; } /* Ø Einnahmen */
+
+
+        .compact-stat-item h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #495057;
+            font-size: 1.05em; /* Etwas kleiner für kompakte Ansicht */
         }
-        #total-profit-summary p { font-size: 1.1em; font-weight: bold; }
+
+        .compact-stat-item p {
+            margin: 5px 0;
+            font-size: 1.2em; /* Wert größer */
+            font-weight: bold;
+        }
+        /* --- Ende Neuer Kompakter Statistik-Block --- */
+
+        /* --- NEU: Fortschrittsbalken --- */
+        #investment-progress-section {
+            max-width: 700px;
+            margin: 0 auto 30px auto; /* Zentriert und mit Abstand nach unten */
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            animation: fadeIn 0.5s 0.2s ease-out forwards; /* Etwas spätere Animation */
+            opacity: 0;
+        }
+
+        .progress-label-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        #investmentProgressBarContainer {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 7px;
+            height: 22px;
+            overflow: hidden;
+            border: 1px solid #d1d1d1;
+        }
+
+        #investmentProgressBarFill {
+            height: 100%;
+            width: 0%; /* Startet bei 0% */
+            background-color: #4CAF50; /* Standard Grün */
+            border-radius: 6px; /* Etwas weniger als Container für "inset" Effekt */
+            transition: width 0.6s ease-in-out, background-color 0.3s ease;
+            text-align: center;
+            color: white;
+            line-height: 22px; /* Vertikal zentrierter Text */
+            font-size: 0.8em;
+            font-weight: bold;
+            overflow: hidden; /* Verhindert, dass Text überläuft */
+            white-space: nowrap;
+        }
+        /* --- Ende Fortschrittsbalken --- */
+
 
         .positions-overview, .positions-archive {
             display: flex;
@@ -69,20 +132,19 @@
             transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
-        /* --- Anpassung für h2 in Position Summary Card --- */
         .position-summary-card h2 {
             margin-top: 0; 
-            font-size: 1.15em; /* Beibehalten für Basis-Schriftgröße des h2 */
+            font-size: 1.15em; 
             color: #34495e;
-            border-bottom: none; /* Entfernt, da der Button der Titel ist */
-            padding-bottom: 0;  /* Entfernt */
+            border-bottom: none; 
+            padding-bottom: 0;  
             margin-bottom: 12px;
             width: 100%; 
             text-align: center; 
-            display: flex; /* Zentriert den Button-Link */
+            display: flex; 
             justify-content: center;
             align-items: center;
-            min-height: 30px; /* Um sicherzustellen, dass der Bereich eine Mindesthöhe hat, auch wenn Text kurz */
+            min-height: 30px; 
         }
 
         .position-summary-card .card-content { flex-grow: 1; width: 100%; }
@@ -126,7 +188,6 @@
 
         .archived-position { opacity: 0.75; border-left: 5px solid #95a5a6; }
         .active-position { border-left: 5px solid #27ae60; }
-        /* .active-position h2 { color: #27ae60; } *//* Farbe wird vom .position-id-button oder global gesteuert */
 
         .time-in-range-display {
             text-align:center; margin-bottom:15px; padding:12px; background-color:#e7f3fe; 
@@ -162,20 +223,19 @@
             align-items: center; 
             text-align: center; 
         }
-        /* --- Anpassung für .position-title (h2 in Detailansicht) --- */
         .position-title { 
-            font-size: 1.4em; /* Basis-Schriftgröße für den Titelbereich */
+            font-size: 1.4em; 
             margin-bottom: 15px; 
             color: #34495e; 
-            border-bottom: none; /* Entfernt, da Button der Titel ist */
-            padding-bottom: 0px; /* Entfernt */
+            border-bottom: none; 
+            padding-bottom: 0px; 
             width: 100%; 
             box-sizing: border-box; 
             text-align: center;
-            display: flex; /* Zentriert den Button-Link */
+            display: flex; 
             justify-content: center;
             align-items: center;
-            min-height: 40px; /* Um sicherzustellen, dass der Bereich eine Mindesthöhe hat */
+            min-height: 40px; 
         }
         .position-block table { 
             border-collapse: collapse; 
@@ -217,25 +277,24 @@
         }
         .section-hidden { opacity: 0; max-height: 0px !important; pointer-events: none; }
 
-        /* --- NEUER CSS-STIL FÜR DEN POSITIONS-ID BUTTON --- */
         .position-id-button {
-            display: inline-block; /* Wichtig für Padding etc. */
+            display: inline-block; 
             padding: 8px 12px;
-            background-color: #f0f2f5; /* Leicht anderer Grauton, anpassbar */
-            color: #34495e; /* Dunklere Textfarbe für besseren Kontrast */
+            background-color: #f0f2f5; 
+            color: #34495e; 
             text-decoration: none;
             border-radius: 6px;
-            font-weight: 600; /* Mittlere Schriftstärke */
+            font-weight: 600; 
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease;
             cursor: pointer;
-            font-size: 0.9em; /* Relative Schriftgröße zum Elternelement (h2) */
-            line-height: normal; /* Stellt sicher, dass der Text vertikal zentriert ist */
-            border: 1px solid #d0d7de; /* Dezenter Rand */
-            white-space: nowrap; /* Verhindert Umbruch bei langen Texten */
+            font-size: 0.9em; 
+            line-height: normal; 
+            border: 1px solid #d0d7de; 
+            white-space: nowrap; 
         }
 
-        .active-position .position-id-button { /* Spezifischer Stil für aktive Positionen */
-             background-color: #e6f7f0; /* Grüner angehauchter Hintergrund */
+        .active-position .position-id-button { 
+             background-color: #e6f7f0; 
              border-color: #a3d9c2;
              color: #20634a;
         }
@@ -250,13 +309,12 @@
             transform: translateY(-1px);
         }
 
-        .position-id-button small { /* Styling für <small> innerhalb des Buttons */
+        .position-id-button small { 
             font-weight: normal;
             color: #7f8c8d; 
             font-size: 0.9em; 
-            margin-left: 4px; /* Kleiner Abstand zum Haupttext */
+            margin-left: 4px; 
         }
-        /* --- ENDE NEUER CSS-STIL --- */
 
 
         @keyframes fadeIn {
@@ -268,19 +326,31 @@
             to { opacity: 1; transform: scale(1); }
         }
 
+        @media (max-width: 720px) { /* Schwelle für kompakte Stats angepasst */
+             #compact-stats-container {
+                flex-direction: column; /* Untereinander auf kleineren Bildschirmen */
+                align-items: center;
+            }
+            .compact-stat-item {
+                flex-basis: 100%; /* Volle Breite, wenn untereinander */
+                width: 90%; /* Maximale Breite, um nicht ganz an den Rand zu gehen */
+                max-width: 400px; /* Max Breite für einen einzelnen Block */
+            }
+        }
+
         @media (max-width: 600px) {
             .position-block {
                 padding: 10px; 
             }
             .position-title {
-                font-size: 1.2em; /* Basis-Schriftgröße für Titelbereich Mobil */
+                font-size: 1.2em; 
             }
             .position-summary-card h2 {
-                font-size: 1.1em; /* Basis-Schriftgröße für Titelbereich Mobil */
+                font-size: 1.1em; 
             }
             .position-id-button {
                 padding: 7px 10px; 
-                font-size: 0.85em; /* Relative Schriftgröße für Button Mobil */
+                font-size: 0.85em; 
             }
             .position-block th, .position-block td {
                 padding: 6px; 
@@ -289,16 +359,8 @@
             .time-in-range-display {
                 width: 95%; 
             }
-            #average-fees-summary, #total-profit-summary {
-                padding: 10px;
-                margin-bottom: 15px;
-            }
-            #average-fees-summary h3, #total-profit-summary h3 {
-                font-size: 1.1em;
-            }
-             #average-fees-summary p, #total-profit-summary p {
-                font-size: 0.9em;
-            }
+            .compact-stat-item h3 { font-size: 1em; } /* Anpassung für Mobile */
+            .compact-stat-item p { font-size: 1.1em; } /* Anpassung für Mobile */
         }
     </style>
 </head>
@@ -313,7 +375,7 @@
         let activeCharts = {}; 
 
         async function createPriceChart(canvasId, positionData) {
-            // ... (Restlicher Code für createPriceChart bleibt gleich wie in deiner vorherigen Version)
+            // ... (Code für createPriceChart bleibt unverändert)
             const chartCanvas = document.getElementById(canvasId);
             if (!chartCanvas) { return; }
             const ctx = chartCanvas.getContext('2d');
@@ -399,7 +461,6 @@
         }
 
         async function loadAndDisplayFees() {
-            // ... (Restlicher Code für loadAndDisplayFees bleibt gleich wie in deiner vorherigen Version)
             const dataContainer = document.getElementById('data-container');
             dataContainer.innerHTML = '<p class="loading-message">Lade Gebührendaten...</p>';
 
@@ -417,60 +478,86 @@
                                    (!(allData[a].is_active === true) && allData[b].is_active === true) ? 1 : 
                                    (new Date(allData[b].last_updated_utc || 0) - new Date(allData[a].last_updated_utc || 0)));
                 
-                let averageDailyHtml = '<div id="average-fees-summary">';
-                averageDailyHtml += '<h3>⌀ tägliche Einnahmen (aktive Position)</h3>';
+                // --- BERECHNUNGEN FÜR STATISTIKEN & FORTSCHRITTSBALKEN ---
+                let totalProfitAllPositionsUsd = 0;
+                let totalInitialInvestmentAllPositions = 0;
+                let avgDailyEarningsActivePosition = 0;
 
                 const activePositionKey = sortedPositionKeys.find(key => allData[key].is_active === true);
-                
                 if (activePositionKey) {
                     const activePosData = allData[activePositionKey];
-                    let totalEarnedUsdForActivePosition = 0;
-                    let daysInHistoryForActivePosition = 0;
-
+                    let totalEarnedUsdForActive = 0;
+                    let daysInHistoryForActive = 0;
                     if (activePosData.history) {
-                        const history = activePosData.history;
-                        daysInHistoryForActivePosition = Object.keys(history).length;
-                        if (daysInHistoryForActivePosition > 0) {
-                            for (const date in history) {
-                                const dayData = history[date].daily_earned_fees;
+                        daysInHistoryForActive = Object.keys(activePosData.history).length;
+                        if (daysInHistoryForActive > 0) {
+                            for (const date in activePosData.history) {
+                                const dayData = activePosData.history[date].daily_earned_fees;
                                 if (dayData && dayData.total_usd != null) {
-                                    totalEarnedUsdForActivePosition += parseFloat(dayData.total_usd);
+                                    totalEarnedUsdForActive += parseFloat(dayData.total_usd);
                                 }
                             }
+                            avgDailyEarningsActivePosition = totalEarnedUsdForActive / daysInHistoryForActive;
                         }
                     }
-
-                    if (daysInHistoryForActivePosition > 0) {
-                        averageDailyHtml += `<p style="font-size: 1.1em; font-weight: bold;">$${(totalEarnedUsdForActivePosition / daysInHistoryForActivePosition).toFixed(2)}</p>`;
-                    } else {
-                        averageDailyHtml += "<p>Keine Daten für Durchschnittsberechnung der aktiven Position vorhanden.</p>";
-                    }
-                } else {
-                    averageDailyHtml += "<p>Keine aktive Position für Durchschnittsberechnung gefunden.</p>";
                 }
-                averageDailyHtml += '</div>';
+
+                for (const positionIdKey of sortedPositionKeys) {
+                    const posData = allData[positionIdKey];
+                    if (posData.initial_investment_usd) {
+                        totalInitialInvestmentAllPositions += parseFloat(posData.initial_investment_usd);
+                    }
+                    const historyDates = posData.history ? Object.keys(posData.history) : [];
+                    historyDates.forEach(date => {
+                        const dayData = posData.history[date];
+                        if (dayData.daily_earned_fees && dayData.daily_earned_fees.total_usd != null) {
+                            totalProfitAllPositionsUsd += parseFloat(dayData.daily_earned_fees.total_usd);
+                        }
+                    });
+                }
+
+                // --- HTML FÜR KOMPAKTEN STATISTIKBLOCK UND FORTSCHRITTSBALKEN ---
+                let summaryHtml = `
+                    <div id="compact-stats-container">
+                        <div class="compact-stat-item">
+                            <h3>Gesamtprofit aller Positionen</h3>
+                            <p id="totalProfitCompact" style="color:${totalProfitAllPositionsUsd >= 0 ? 'green':'red'};">$${totalProfitAllPositionsUsd.toFixed(2)}</p>
+                        </div>
+                        <div class="compact-stat-item">
+                            <h3>⌀ tägl. Einnahmen (aktive Position)</h3>
+                            <p id="avgDailyEarningsCompact">${activePositionKey && avgDailyEarningsActivePosition ? '$'+avgDailyEarningsActivePosition.toFixed(2) : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div id="investment-progress-section">
+                        <div class="progress-label-container">
+                            <span>Profit / Initialinvestments</span>
+                            <span id="investmentProgressText">0%</span>
+                        </div>
+                        <div id="investmentProgressBarContainer">
+                            <div id="investmentProgressBarFill"></div>
+                        </div>
+                    </div>
+                `;
                 
-                let totalProfitAllPositionsUsd = 0;
                 let overviewHtml = '<div class="positions-overview section-container">';
                 let archiveHtml = '<div class="positions-archive section-container"><h2 class="archive-title">Archivierte Positionen</h2>';
                 let hasActive = false, hasArchived = false;
 
+                // Loop for position cards (remains largely the same, just ensure totalProfitAllPositionsUsd is calculated once above)
                 for (const positionIdKey of sortedPositionKeys) {
                     const posData = allData[positionIdKey];
                     const posNum = positionIdKey.replace('position_', '');
                     const isActive = posData.is_active === true;
                     const uniswapLink = `https://app.uniswap.org/positions/v3/arbitrum/${posNum}`;
 
-                    let currentPositionTotalProfitUsd = 0;
+                    let currentPositionTotalProfitUsd = 0; // Recalculate for individual card display
                     const historyDates = posData.history ? Object.keys(posData.history).sort((a, b) => new Date(b) - new Date(a)) : [];
-
                     historyDates.forEach(date => {
                         const dayData = posData.history[date];
                         if (dayData.daily_earned_fees && dayData.daily_earned_fees.total_usd != null) {
                             currentPositionTotalProfitUsd += parseFloat(dayData.daily_earned_fees.total_usd);
                         }
                     });
-                    totalProfitAllPositionsUsd += currentPositionTotalProfitUsd;
 
                     let profitPercText = 'N/A';
                     if (posData.initial_investment_usd && parseFloat(posData.initial_investment_usd) > 0) {
@@ -484,42 +571,20 @@
                         if (localHistoryDates.length > 0) {
                             localHistoryDates.sort((a, b) => new Date(a) - new Date(b));
                             const firstEntryDate = new Date(localHistoryDates[0]);
-                            
-                            let endDate;
-                            if (posData.is_active === true) {
-                                endDate = new Date();
-                            } else {
-                                const lastEntryDateStr = localHistoryDates[localHistoryDates.length - 1];
-                                endDate = new Date(lastEntryDateStr);
-                            }
-                            
+                            let endDate = isActive ? new Date() : new Date(localHistoryDates[localHistoryDates.length - 1]);
                             const startDateClean = new Date(firstEntryDate.getFullYear(), firstEntryDate.getMonth(), firstEntryDate.getDate());
                             const endDateClean = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-                            const diffTime = endDateClean.getTime() - startDateClean.getTime();
-                            let calculatedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                            
-                            if (calculatedDays <= 0) { 
-                                calculatedDays = 1;
-                            }
-                            daysOpenText = `${calculatedDays} Tage`;
-                        } else if (posData.is_active === true) { 
-                            daysOpenText = '1 Tag'; 
-                        } else { 
-                            daysOpenText = '0 Tage'; 
-                        }
+                            let calculatedDays = Math.max(1, Math.floor((endDateClean - startDateClean) / (1000 * 60 * 60 * 24)) + 1);
+                            daysOpenText = `${calculatedDays} Tag${calculatedDays > 1 ? 'en' : ''}`;
+                        } else if (isActive) { daysOpenText = '1 Tag'; } 
+                          else { daysOpenText = '0 Tage'; }
                     }
                     
                     const chartCanvasId = `priceChart_${positionIdKey}`;
-                    let chartHtmlPart = '';
-                    if (isActive) { // Chart nur für aktive Positionen in der Übersicht
-                        chartHtmlPart = `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>`;
-                    }
-
+                    let chartHtmlPart = isActive ? `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>` : '';
+                    
                     let chartAndRecentFeesHtml = '<div class="chart-and-recent-fees">';
-                    if (isActive) { // Chart HTML nur einfügen, wenn aktiv
-                        chartAndRecentFeesHtml += chartHtmlPart;
-                    }
+                    if (isActive) chartAndRecentFeesHtml += chartHtmlPart;
                     chartAndRecentFeesHtml += `<p class="update-timestamp"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
                     chartAndRecentFeesHtml += '<div class="recent-fees-summary">';
                     chartAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px;">Letzte Gebühren:</p>';
@@ -531,19 +596,10 @@
                                 chartAndRecentFeesHtml += `<p>${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
                             }
                         });
-                    } else {
-                        chartAndRecentFeesHtml += '<p>Keine Gebührendaten.</p>';
-                    }
+                    } else { chartAndRecentFeesHtml += '<p>Keine Gebührendaten.</p>'; }
                     chartAndRecentFeesHtml += '</div></div>';
 
-                    // --- ANPASSUNG FÜR BUTTON-LINK IM TITEL ---
-                    let titleHtml = `<h2>
-                                        <a href="${uniswapLink}" target="_blank" rel="noopener noreferrer" class="position-id-button">
-                                            Position ${posNum} 
-                                            ${isActive ? '' : '<small>(Archiv.)</small>'}
-                                        </a>
-                                     </h2>`;
-
+                    let titleHtml = `<h2><a href="${uniswapLink}" target="_blank" rel="noopener noreferrer" class="position-id-button">Position ${posNum} ${isActive ? '' : '<small>(Archiv.)</small>'}</a></h2>`;
                     let cardHtml = `
                         <div class="position-summary-card ${isActive ? 'active-position' : 'archived-position'}" data-position-id="${positionIdKey}">
                             ${titleHtml} 
@@ -555,31 +611,61 @@
                                 <p class="sub-info"><small>Initial: ${posData.initial_investment_usd ? parseFloat(posData.initial_investment_usd).toFixed(2) + ' USD':'N/A'}</small></p>
                                 ${chartAndRecentFeesHtml}
                             </div>
-                            <div class="details-button-container">
-                                <button class="details-button">Details anzeigen</button>
-                            </div>
+                            <div class="details-button-container"><button class="details-button">Details anzeigen</button></div>
                         </div>`;
 
                     if (isActive) { overviewHtml += cardHtml; hasActive = true; }
                     else { archiveHtml += cardHtml; hasArchived = true; }
                 }
                 overviewHtml += '</div>'; archiveHtml += '</div>';
-
-                let totalProfitSummaryHtml = `<div id="total-profit-summary">
-                                                <h3>Gesamtprofit aller Positionen</h3>
-                                                <p style="color:${totalProfitAllPositionsUsd >= 0 ? 'green':'red'};">$${totalProfitAllPositionsUsd.toFixed(2)}</p>
-                                              </div>`;
-
-                let finalHtml = averageDailyHtml + totalProfitSummaryHtml;
-
+                
+                let finalHtml = summaryHtml; // Start with new summary blocks
                 if (hasActive) finalHtml += overviewHtml;
                 else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
                 if (hasArchived) finalHtml += archiveHtml;
-                
                 finalHtml += '<div id="details-section-container" class="section-container section-hidden"></div>';
                 dataContainer.innerHTML = finalHtml;
 
-                if(hasActive){ // Charts nur für aktive Positionen initialisieren
+                // --- FORTSCHRITTSBALKEN AKTUALISIEREN ---
+                const investmentProgressBarFillEl = document.getElementById('investmentProgressBarFill');
+                const investmentProgressTextEl = document.getElementById('investmentProgressText');
+
+                if (investmentProgressBarFillEl && investmentProgressTextEl) {
+                    if (totalInitialInvestmentAllPositions > 0) {
+                        let progressPercent = (totalProfitAllPositionsUsd / totalInitialInvestmentAllPositions) * 100;
+                        let barFillPercent = Math.min(Math.max(progressPercent, 0), 100); // Balken 0-100%
+                        
+                        investmentProgressBarFillEl.style.width = `${barFillPercent}%`;
+                        investmentProgressTextEl.textContent = `${progressPercent.toFixed(1)}%`;
+                        
+                        // Optional: Text im Balken nur wenn Platz ist
+                        if (barFillPercent > 15) { // Nur anzeigen, wenn Balken etwas gefüllt ist
+                             investmentProgressBarFillEl.textContent = `${progressPercent.toFixed(0)}%`;
+                        } else {
+                             investmentProgressBarFillEl.textContent = '';
+                        }
+
+
+                        if (progressPercent < 0) {
+                            investmentProgressBarFillEl.style.backgroundColor = '#dc3545'; // Rot
+                            investmentProgressTextEl.style.color = '#dc3545';
+                        } else if (progressPercent >= 100) {
+                            investmentProgressBarFillEl.style.backgroundColor = '#007bff'; // Blau
+                            investmentProgressTextEl.style.color = '#007bff';
+                        } else {
+                            investmentProgressBarFillEl.style.backgroundColor = '#4CAF50'; // Grün
+                            investmentProgressTextEl.style.color = '#4CAF50';
+                        }
+                    } else {
+                        investmentProgressBarFillEl.style.width = '0%';
+                        investmentProgressTextEl.textContent = 'N/A';
+                        investmentProgressBarFillEl.textContent = '';
+                        investmentProgressTextEl.style.color = '#777'; // Grau für N/A
+                    }
+                }
+
+
+                if(hasActive){ 
                     sortedPositionKeys.forEach(key => {
                         if(allData[key].is_active === true){
                             createPriceChart(`priceChart_${key}`, allData[key]);
@@ -608,21 +694,20 @@
         }
 
         function showPositionDetails(positionData, positionIdKey) {
-            // ... (Restlicher Code für showPositionDetails bleibt gleich wie in deiner vorherigen Version)
-             const positionNumber = positionIdKey.replace('position_', '');
+            // ... (Code für showPositionDetails bleibt unverändert)
+            const positionNumber = positionIdKey.replace('position_', '');
             const uniswapLink = `https://app.uniswap.org/positions/v3/arbitrum/${positionNumber}`;
             const isActive = positionData.is_active === true;
 
-            // --- ANPASSUNG FÜR BUTTON-LINK IM DETAIL-TITEL ---
             let detailTitleHtml = `<h2 class="position-title">
-                                        <a href="${uniswapLink}" target="_blank" rel="noopener noreferrer" class="position-id-button ${isActive ? 'active' : ''}">
+                                        <a href="${uniswapLink}" target="_blank" rel="noopener noreferrer" class="position-id-button ${isActive ? 'active-position' : ''}">
                                             Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'})
                                             ${isActive ? '' : '<small>(Archiviert)</small>'}
                                         </a>
                                    </h2>`;
 
             let detailHtml = `<div class="position-block">`; 
-            detailHtml += detailTitleHtml; // Verwendet den angepassten Titel
+            detailHtml += detailTitleHtml; 
             
             if (positionData.time_in_range_24h_percentage !== undefined && positionData.time_in_range_24h_percentage !== null) {
                 detailHtml += `<div class="time-in-range-display">`;
@@ -671,7 +756,7 @@
         }
 
         function hidePositionDetails() {
-             // ... (Restlicher Code für hidePositionDetails bleibt gleich wie in deiner vorherigen Version)
+            // ... (Code für hidePositionDetails bleibt unverändert)
             if (detailsContainerGlobalRef) { detailsContainerGlobalRef.classList.add('section-hidden'); detailsContainerGlobalRef.style.maxHeight = "0px"; }
             if (overviewSectionGlobalRef) { overviewSectionGlobalRef.classList.remove('section-hidden'); overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px"; }
             if (archiveSectionGlobalRef && document.querySelector('.archived-position')) { archiveSectionGlobalRef.classList.remove('section-hidden'); archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px"; }
