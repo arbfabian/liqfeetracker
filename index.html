@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uniswap V3 LP Gebühren Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FAVICON HINZUGEFÜGT -->
+    <link rel="icon" href="favicon.jpg" type="image/jpeg">
+
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 15px;}
@@ -309,7 +313,7 @@
         let activeCharts = {}; 
 
         async function createPriceChart(canvasId, positionData) {
-            // ... (Restlicher Code für createPriceChart bleibt gleich)
+            // ... (Restlicher Code für createPriceChart bleibt gleich wie in deiner vorherigen Version)
             const chartCanvas = document.getElementById(canvasId);
             if (!chartCanvas) { return; }
             const ctx = chartCanvas.getContext('2d');
@@ -395,6 +399,7 @@
         }
 
         async function loadAndDisplayFees() {
+            // ... (Restlicher Code für loadAndDisplayFees bleibt gleich wie in deiner vorherigen Version)
             const dataContainer = document.getElementById('data-container');
             dataContainer.innerHTML = '<p class="loading-message">Lade Gebührendaten...</p>';
 
@@ -603,7 +608,8 @@
         }
 
         function showPositionDetails(positionData, positionIdKey) {
-            const positionNumber = positionIdKey.replace('position_', '');
+            // ... (Restlicher Code für showPositionDetails bleibt gleich wie in deiner vorherigen Version)
+             const positionNumber = positionIdKey.replace('position_', '');
             const uniswapLink = `https://app.uniswap.org/positions/v3/arbitrum/${positionNumber}`;
             const isActive = positionData.is_active === true;
 
@@ -665,6 +671,7 @@
         }
 
         function hidePositionDetails() {
+             // ... (Restlicher Code für hidePositionDetails bleibt gleich wie in deiner vorherigen Version)
             if (detailsContainerGlobalRef) { detailsContainerGlobalRef.classList.add('section-hidden'); detailsContainerGlobalRef.style.maxHeight = "0px"; }
             if (overviewSectionGlobalRef) { overviewSectionGlobalRef.classList.remove('section-hidden'); overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px"; }
             if (archiveSectionGlobalRef && document.querySelector('.archived-position')) { archiveSectionGlobalRef.classList.remove('section-hidden'); archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px"; }
