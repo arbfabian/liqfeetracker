@@ -69,19 +69,20 @@
             transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
+        /* --- Anpassung für h2 in Position Summary Card --- */
         .position-summary-card h2 {
             margin-top: 0; 
-            font-size: 1.15em; 
+            font-size: 1.15em; /* Beibehalten für Basis-Schriftgröße des h2 */
             color: #34495e;
-            border-bottom: none; 
-            padding-bottom: 0;  
+            border-bottom: none; /* Entfernt, da der Button der Titel ist */
+            padding-bottom: 0;  /* Entfernt */
             margin-bottom: 12px;
             width: 100%; 
             text-align: center; 
-            display: flex; 
+            display: flex; /* Zentriert den Button-Link */
             justify-content: center;
             align-items: center;
-            min-height: 30px; 
+            min-height: 30px; /* Um sicherzustellen, dass der Bereich eine Mindesthöhe hat, auch wenn Text kurz */
         }
 
         .position-summary-card .card-content { flex-grow: 1; width: 100%; }
@@ -125,6 +126,7 @@
 
         .archived-position { opacity: 0.75; border-left: 5px solid #95a5a6; }
         .active-position { border-left: 5px solid #27ae60; }
+        /* .active-position h2 { color: #27ae60; } *//* Farbe wird vom .position-id-button oder global gesteuert */
 
         .time-in-range-display {
             text-align:center; margin-bottom:15px; padding:12px; background-color:#e7f3fe; 
@@ -160,19 +162,20 @@
             align-items: center; 
             text-align: center; 
         }
+        /* --- Anpassung für .position-title (h2 in Detailansicht) --- */
         .position-title { 
-            font-size: 1.4em; 
+            font-size: 1.4em; /* Basis-Schriftgröße für den Titelbereich */
             margin-bottom: 15px; 
             color: #34495e; 
-            border-bottom: none; 
-            padding-bottom: 0px; 
+            border-bottom: none; /* Entfernt, da Button der Titel ist */
+            padding-bottom: 0px; /* Entfernt */
             width: 100%; 
             box-sizing: border-box; 
             text-align: center;
-            display: flex; 
+            display: flex; /* Zentriert den Button-Link */
             justify-content: center;
             align-items: center;
-            min-height: 40px; 
+            min-height: 40px; /* Um sicherzustellen, dass der Bereich eine Mindesthöhe hat */
         }
         .position-block table { 
             border-collapse: collapse; 
@@ -214,23 +217,25 @@
         }
         .section-hidden { opacity: 0; max-height: 0px !important; pointer-events: none; }
 
+        /* --- NEUER CSS-STIL FÜR DEN POSITIONS-ID BUTTON --- */
         .position-id-button {
-            display: inline-block; 
+            display: inline-block; /* Wichtig für Padding etc. */
             padding: 8px 12px;
-            background-color: #f0f2f5; 
-            color: #34495e; 
+            background-color: #f0f2f5; /* Leicht anderer Grauton, anpassbar */
+            color: #34495e; /* Dunklere Textfarbe für besseren Kontrast */
             text-decoration: none;
             border-radius: 6px;
-            font-weight: 600; 
+            font-weight: 600; /* Mittlere Schriftstärke */
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease;
             cursor: pointer;
-            font-size: 0.9em; 
-            line-height: normal; 
-            border: 1px solid #d0d7de; 
-            white-space: nowrap; 
+            font-size: 0.9em; /* Relative Schriftgröße zum Elternelement (h2) */
+            line-height: normal; /* Stellt sicher, dass der Text vertikal zentriert ist */
+            border: 1px solid #d0d7de; /* Dezenter Rand */
+            white-space: nowrap; /* Verhindert Umbruch bei langen Texten */
         }
-        .active-position .position-id-button { 
-             background-color: #e6f7f0; 
+
+        .active-position .position-id-button { /* Spezifischer Stil für aktive Positionen */
+             background-color: #e6f7f0; /* Grüner angehauchter Hintergrund */
              border-color: #a3d9c2;
              color: #20634a;
         }
@@ -238,52 +243,21 @@
              background-color: #d1f0e3;
              color: #174a36;
         }
+
         .position-id-button:hover {
             background-color: #e4e8ed;
             color: #2c3e50;
             transform: translateY(-1px);
         }
-        .position-id-button small { 
+
+        .position-id-button small { /* Styling für <small> innerhalb des Buttons */
             font-weight: normal;
             color: #7f8c8d; 
             font-size: 0.9em; 
-            margin-left: 4px; 
+            margin-left: 4px; /* Kleiner Abstand zum Haupttext */
         }
+        /* --- ENDE NEUER CSS-STIL --- */
 
-        /* --- STILE FÜR ROI FORTSCHRITTSBALKEN --- */
-        .roi-progress-container {
-            width: 90%; 
-            background-color: #e9ecef; 
-            border-radius: 5px;
-            margin: 8px auto 5px auto; 
-            height: 12px; 
-            overflow: hidden; 
-            border: 1px solid #ced4da;
-        }
-        .roi-progress-bar {
-            height: 100%;
-            background-color: #28a745; 
-            border-radius: 4px; 
-            text-align: center;
-            line-height: 12px; 
-            color: white;
-            font-size: 0.7em;
-            font-weight: bold;
-            transition: width 0.5s ease-in-out; 
-            box-shadow: inset 0 -1px 1px rgba(0,0,0,0.1);
-        }
-        .roi-progress-bar.over-100 {
-            background-color: #ffc107; 
-            color: #333;
-        }
-        .roi-percentage-text {
-            font-size: 0.85em;
-            color: #555;
-            margin-top: 3px;
-            margin-bottom: 8px; /* Etwas mehr Platz nach unten */
-            font-weight: bold;
-        }
-        /* --- ENDE ROI STILE --- */
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(15px); }
@@ -295,17 +269,36 @@
         }
 
         @media (max-width: 600px) {
-            .position-block { padding: 10px; }
-            .position-title { font-size: 1.2em; }
-            .position-summary-card h2 { font-size: 1.1em; }
-            .position-id-button { padding: 7px 10px; font-size: 0.85em; }
-            .position-block th, .position-block td { padding: 6px; font-size: 0.9em; }
-            .time-in-range-display { width: 95%; }
-            #average-fees-summary, #total-profit-summary { padding: 10px; margin-bottom: 15px; }
-            #average-fees-summary h3, #total-profit-summary h3 { font-size: 1.1em; }
-            #average-fees-summary p, #total-profit-summary p { font-size: 0.9em; }
-            .roi-progress-container { height: 10px; }
-            .roi-progress-bar { line-height: 10px; }
+            .position-block {
+                padding: 10px; 
+            }
+            .position-title {
+                font-size: 1.2em; /* Basis-Schriftgröße für Titelbereich Mobil */
+            }
+            .position-summary-card h2 {
+                font-size: 1.1em; /* Basis-Schriftgröße für Titelbereich Mobil */
+            }
+            .position-id-button {
+                padding: 7px 10px; 
+                font-size: 0.85em; /* Relative Schriftgröße für Button Mobil */
+            }
+            .position-block th, .position-block td {
+                padding: 6px; 
+                font-size: 0.9em; 
+            }
+            .time-in-range-display {
+                width: 95%; 
+            }
+            #average-fees-summary, #total-profit-summary {
+                padding: 10px;
+                margin-bottom: 15px;
+            }
+            #average-fees-summary h3, #total-profit-summary h3 {
+                font-size: 1.1em;
+            }
+             #average-fees-summary p, #total-profit-summary p {
+                font-size: 0.9em;
+            }
         }
     </style>
 </head>
@@ -320,6 +313,7 @@
         let activeCharts = {}; 
 
         async function createPriceChart(canvasId, positionData) {
+            // ... (Restlicher Code für createPriceChart bleibt gleich wie in deiner vorherigen Version)
             const chartCanvas = document.getElementById(canvasId);
             if (!chartCanvas) { return; }
             const ctx = chartCanvas.getContext('2d');
@@ -331,26 +325,32 @@
                     return;
                 }
                 const allPriceTicks = await priceTicksResponse.json();
+                
                 if (!Array.isArray(allPriceTicks)) {
                      chartCanvas.parentElement.innerHTML = "<p>Ungültiges Format der Preisdaten.</p>";
                      return;
                 }
+
                 let latestRange = null;
                 const historyDatesForRange = Object.keys(positionData.history || {}).sort((a,b) => new Date(b) - new Date(a));
                 if (historyDatesForRange.length > 0 && positionData.history[historyDatesForRange[0]].position_range) {
                     latestRange = positionData.history[historyDatesForRange[0]].position_range;
                 }
+                
                 const relevantPriceTicks = allPriceTicks.filter(tick => 
                     latestRange && 
                     tick.base_token === latestRange.base_token_for_price &&
                     tick.quote_token === latestRange.quote_token_for_price
                 );
+                
                 if (relevantPriceTicks.length === 0) {
                     chartCanvas.parentElement.innerHTML = "<p>Keine passenden Preisdaten für Chart.</p>";
                     return;
                 }
+
                 const labels = relevantPriceTicks.map(tick => new Date(tick.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit'}));
                 const prices = relevantPriceTicks.map(tick => tick.price);
+
                 const chartData = {
                     labels: labels,
                     datasets: [{
@@ -360,6 +360,7 @@
                         tension: 0.1, pointRadius: 1, borderWidth: 1.5
                     }]
                 };
+
                 if (latestRange && latestRange.price_lower != null && latestRange.price_upper != null) {
                     const rangeColor = 'rgba(255, 99, 132, 0.5)';
                     chartData.datasets.push({
@@ -376,6 +377,7 @@
                         fill: '-1', backgroundColor: 'rgba(255, 99, 132, 0.05)', order: 0
                     });
                 }
+                
                 const config = {
                     type: 'line', data: chartData,
                     options: {
@@ -384,8 +386,10 @@
                         plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
                     }
                 };
+                
                 if (activeCharts[canvasId]) { activeCharts[canvasId].destroy(); }
                 activeCharts[canvasId] = new Chart(ctx, config);
+
             } catch (error) {
                 console.error(`Fehler beim Erstellen des Charts ${canvasId}:`, error);
                 if (chartCanvas && chartCanvas.parentElement) {
@@ -395,6 +399,7 @@
         }
 
         async function loadAndDisplayFees() {
+            // ... (Restlicher Code für loadAndDisplayFees bleibt gleich wie in deiner vorherigen Version)
             const dataContainer = document.getElementById('data-container');
             dataContainer.innerHTML = '<p class="loading-message">Lade Gebührendaten...</p>';
 
@@ -466,6 +471,12 @@
                         }
                     });
                     totalProfitAllPositionsUsd += currentPositionTotalProfitUsd;
+
+                    let profitPercText = 'N/A';
+                    if (posData.initial_investment_usd && parseFloat(posData.initial_investment_usd) > 0) {
+                        const perc = (currentPositionTotalProfitUsd / parseFloat(posData.initial_investment_usd)) * 100;
+                        profitPercText = `<span style="color:${perc >= 0 ? 'green':'red'};">${perc.toFixed(2)}%</span>`;
+                    }
                     
                     let daysOpenText = 'N/A';
                     if (posData.history) {
@@ -473,86 +484,42 @@
                         if (localHistoryDates.length > 0) {
                             localHistoryDates.sort((a, b) => new Date(a) - new Date(b));
                             const firstEntryDate = new Date(localHistoryDates[0]);
+                            
                             let endDate;
-                            if (posData.is_active === true) { endDate = new Date(); } 
-                            else { const lastEntryDateStr = localHistoryDates[localHistoryDates.length - 1]; endDate = new Date(lastEntryDateStr); }
+                            if (posData.is_active === true) {
+                                endDate = new Date();
+                            } else {
+                                const lastEntryDateStr = localHistoryDates[localHistoryDates.length - 1];
+                                endDate = new Date(lastEntryDateStr);
+                            }
+                            
                             const startDateClean = new Date(firstEntryDate.getFullYear(), firstEntryDate.getMonth(), firstEntryDate.getDate());
                             const endDateClean = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
                             const diffTime = endDateClean.getTime() - startDateClean.getTime();
                             let calculatedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                            if (calculatedDays <= 0) { calculatedDays = 1; }
-                            daysOpenText = `${calculatedDays} Tag${calculatedDays === 1 ? '' : 'e'}`;
-                        } else if (posData.is_active === true) { daysOpenText = '1 Tag'; } 
-                        else { daysOpenText = '0 Tage'; }
+                            
+                            if (calculatedDays <= 0) { 
+                                calculatedDays = 1;
+                            }
+                            daysOpenText = `${calculatedDays} Tage`;
+                        } else if (posData.is_active === true) { 
+                            daysOpenText = '1 Tag'; 
+                        } else { 
+                            daysOpenText = '0 Tage'; 
+                        }
                     }
                     
-                    // --- ROI Fortschrittsbalken Logik ---
-                    let roiHtml = '';
-                    if (isActive && posData.initial_investment_usd && parseFloat(posData.initial_investment_usd) > 0) {
-                        const initialInvestment = parseFloat(posData.initial_investment_usd);
-                        let roiPercentage = 0;
-                        if (initialInvestment > 0) {
-                           roiPercentage = (currentPositionTotalProfitUsd / initialInvestment) * 100;
-                        }
-                        let progressBarWidth = Math.min(Math.abs(roiPercentage), 100); // Absolutwert für Breite, da Balken positiv bleibt
-                        
-                        let barClass = 'roi-progress-bar';
-                        let barText = '';
-
-                        if (currentPositionTotalProfitUsd < 0) {
-                            progressBarWidth = (Math.abs(currentPositionTotalProfitUsd) / initialInvestment) * 100; // Anteil des Verlusts vom Initialinvestment
-                            progressBarWidth = Math.min(progressBarWidth, 100);
-                            barClass += ' negative-roi'; // Spezielle Klasse für negativen ROI
-                        } else if (roiPercentage >= 100) {
-                            barClass += ' over-100';
-                            barText = 'ROI erreicht!';
-                        }
-                        
-                        roiHtml = `
-                            <p style="margin-bottom: 5px;">
-                                <strong>Gesamtprofit (Gebühren):</strong> 
-                                <span style="color:${currentPositionTotalProfitUsd >= 0 ? '#28a745' : '#dc3545'}; font-weight:bold;">
-                                    ${currentPositionTotalProfitUsd.toFixed(2)} USD
-                                </span>
-                            </p>
-                            <div class="roi-progress-container" title="Fortschritt zum Erreichen des Initialinvestments durch Gebühren">
-                                <div class="${barClass}" style="width: ${progressBarWidth.toFixed(2)}%;">
-                                    ${barText}
-                                </div>
-                            </div>
-                            <p class="roi-percentage-text">ROI (Gebühren): ${roiPercentage.toFixed(1)}%</p>
-                        `;
-                    } else if (isActive) {
-                         roiHtml = `
-                            <p><strong>Gesamtprofit (Gebühren):</strong> 
-                                <span style="color:${currentPositionTotalProfitUsd >= 0 ? '#28a745' : '#dc3545'}; font-weight:bold;">
-                                    ${currentPositionTotalProfitUsd.toFixed(2)} USD
-                                </span>
-                            </p>
-                            <p class="roi-percentage-text">ROI: Initialinvestment nicht bekannt</p>
-                         `;
-                    } else { // Archivierte Position
-                        roiHtml = `
-                            <p><strong>Gesamtprofit (Gebühren):</strong> 
-                                <span style="color:${currentPositionTotalProfitUsd >= 0 ? '#28a745' : '#dc3545'}; font-weight:bold;">
-                                    ${currentPositionTotalProfitUsd.toFixed(2)} USD
-                                </span>
-                            </p>
-                        `;
-                         // Für archivierte Positionen ggf. noch den "Profit %" anzeigen, wenn gewünscht
-                        if (posData.initial_investment_usd && parseFloat(posData.initial_investment_usd) > 0) {
-                             const perc = (currentPositionTotalProfitUsd / parseFloat(posData.initial_investment_usd)) * 100;
-                             roiHtml += `<p class="roi-percentage-text">Profit: <span style="color:${perc >= 0 ? '#28a745':'#dc3545'};">${perc.toFixed(1)}%</span></p>`;
-                        }
-                    }
-                    // --- Ende ROI Logik ---
-
                     const chartCanvasId = `priceChart_${positionIdKey}`;
                     let chartHtmlPart = '';
-                    if (isActive) { chartHtmlPart = `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>`; }
+                    if (isActive) { // Chart nur für aktive Positionen in der Übersicht
+                        chartHtmlPart = `<div class="price-chart-container"><canvas id="${chartCanvasId}"></canvas></div>`;
+                    }
 
                     let chartAndRecentFeesHtml = '<div class="chart-and-recent-fees">';
-                    if (isActive) { chartAndRecentFeesHtml += chartHtmlPart; }
+                    if (isActive) { // Chart HTML nur einfügen, wenn aktiv
+                        chartAndRecentFeesHtml += chartHtmlPart;
+                    }
                     chartAndRecentFeesHtml += `<p class="update-timestamp"><small>Letztes Update: ${posData.last_updated_utc ? new Date(posData.last_updated_utc).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}</small></p>`;
                     chartAndRecentFeesHtml += '<div class="recent-fees-summary">';
                     chartAndRecentFeesHtml += '<p style="font-weight:bold; margin-bottom:4px;">Letzte Gebühren:</p>';
@@ -561,7 +528,7 @@
                         lastThreeFees.forEach(date => {
                             const feeUsd = posData.history[date].daily_earned_fees?.total_usd;
                             if (feeUsd != null) {
-                                chartAndRecentFeesHtml += `<p>${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? '#28a745':'#dc3545'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
+                                chartAndRecentFeesHtml += `<p>${new Date(date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'})}: <strong style="color:${feeUsd >= 0 ? 'green':'red'};">${parseFloat(feeUsd).toFixed(2)} USD</strong></p>`;
                             }
                         });
                     } else {
@@ -569,9 +536,11 @@
                     }
                     chartAndRecentFeesHtml += '</div></div>';
 
+                    // --- ANPASSUNG FÜR BUTTON-LINK IM TITEL ---
                     let titleHtml = `<h2>
                                         <a href="${uniswapLink}" target="_blank" rel="noopener noreferrer" class="position-id-button">
-                                            Position ${posNum} ${isActive ? '' : '<small>(Archiv.)</small>'}
+                                            Position ${posNum} 
+                                            ${isActive ? '' : '<small>(Archiv.)</small>'}
                                         </a>
                                      </h2>`;
 
@@ -580,7 +549,8 @@
                             ${titleHtml} 
                             <div class="card-content">
                                 <p><strong>Paar:</strong> ${posData.token_pair_symbols || 'N/A'}</p>
-                                ${roiHtml} {/* HIER WIRD DER ROI/PROFIT BLOCK EINGEFÜGT */}
+                                <p><strong>Gesamtprofit:</strong> <span style="color:${currentPositionTotalProfitUsd >= 0 ? 'green':'red'}; font-weight:bold;">${currentPositionTotalProfitUsd.toFixed(2)} USD</span></p>
+                                <p><strong>Profit %:</strong> ${profitPercText}</p>
                                 <p><strong>${isActive ? 'Offen seit':'Laufzeit'}:</strong> ${daysOpenText}</p>
                                 <p class="sub-info"><small>Initial: ${posData.initial_investment_usd ? parseFloat(posData.initial_investment_usd).toFixed(2) + ' USD':'N/A'}</small></p>
                                 ${chartAndRecentFeesHtml}
@@ -597,18 +567,23 @@
 
                 let totalProfitSummaryHtml = `<div id="total-profit-summary">
                                                 <h3>Gesamtprofit aller Positionen</h3>
-                                                <p style="color:${totalProfitAllPositionsUsd >= 0 ? '#28a745':'#dc3545'};">$${totalProfitAllPositionsUsd.toFixed(2)}</p>
+                                                <p style="color:${totalProfitAllPositionsUsd >= 0 ? 'green':'red'};">$${totalProfitAllPositionsUsd.toFixed(2)}</p>
                                               </div>`;
+
                 let finalHtml = averageDailyHtml + totalProfitSummaryHtml;
+
                 if (hasActive) finalHtml += overviewHtml;
                 else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
                 if (hasArchived) finalHtml += archiveHtml;
+                
                 finalHtml += '<div id="details-section-container" class="section-container section-hidden"></div>';
                 dataContainer.innerHTML = finalHtml;
 
-                if(hasActive){
+                if(hasActive){ // Charts nur für aktive Positionen initialisieren
                     sortedPositionKeys.forEach(key => {
-                        if(allData[key].is_active === true){ createPriceChart(`priceChart_${key}`, allData[key]); }
+                        if(allData[key].is_active === true){
+                            createPriceChart(`priceChart_${key}`, allData[key]);
+                        }
                     });
                 }
 
@@ -625,6 +600,7 @@
                         showPositionDetails(allData[this.closest('.position-summary-card').dataset.positionId], this.closest('.position-summary-card').dataset.positionId);
                     });
                 });
+
             } catch (error) {
                 console.error('Fehler beim Laden oder Anzeigen der Daten:', error); 
                 dataContainer.innerHTML = `<p class="error-message">Fehler beim Initialisieren der Seite: ${error.message}. Bitte Konsole prüfen.</p>`;
@@ -632,17 +608,22 @@
         }
 
         function showPositionDetails(positionData, positionIdKey) {
-            const positionNumber = positionIdKey.replace('position_', '');
+            // ... (Restlicher Code für showPositionDetails bleibt gleich wie in deiner vorherigen Version)
+             const positionNumber = positionIdKey.replace('position_', '');
             const uniswapLink = `https://app.uniswap.org/positions/v3/arbitrum/${positionNumber}`;
             const isActive = positionData.is_active === true;
+
+            // --- ANPASSUNG FÜR BUTTON-LINK IM DETAIL-TITEL ---
             let detailTitleHtml = `<h2 class="position-title">
                                         <a href="${uniswapLink}" target="_blank" rel="noopener noreferrer" class="position-id-button ${isActive ? 'active' : ''}">
                                             Position ${positionNumber} (${positionData.token_pair_symbols || 'N/A'})
                                             ${isActive ? '' : '<small>(Archiviert)</small>'}
                                         </a>
                                    </h2>`;
+
             let detailHtml = `<div class="position-block">`; 
-            detailHtml += detailTitleHtml; 
+            detailHtml += detailTitleHtml; // Verwendet den angepassten Titel
+            
             if (positionData.time_in_range_24h_percentage !== undefined && positionData.time_in_range_24h_percentage !== null) {
                 detailHtml += `<div class="time-in-range-display">`;
                 detailHtml += `<p><strong>Time in Range (letzte 24h): <span>${parseFloat(positionData.time_in_range_24h_percentage).toFixed(1)}%</span></strong></p>`;
@@ -652,9 +633,11 @@
                  detailHtml += `<p class="data-unavailable">Time in Range (letzte 24h): Daten nicht verfügbar.</p>`;
                  detailHtml += `</div>`;
             }
+
             const tokenSymbols = (positionData.token_pair_symbols || "Token0/Token1").split('/');
             const token0DisplaySymbol = tokenSymbols.length > 0 ? tokenSymbols[0] : "Token0";
             const token1DisplaySymbol = tokenSymbols.length > 1 ? tokenSymbols[1] : "Token1";
+
             detailHtml += `<table><thead><tr><th>Datum</th><th>Verdient ${token0DisplaySymbol}</th><th>Verdient ${token1DisplaySymbol}</th><th>Verdient Total USD</th></tr></thead><tbody>`;
             const history = positionData.history;
             if (history && typeof history === 'object' && Object.keys(history).length > 0) {
@@ -675,16 +658,20 @@
             detailHtml += `</tbody></table>`;
             detailHtml += `<button class="back-button">Zurück zur Übersicht</button>`;
             detailHtml += `</div>`;
+
             if (overviewSectionGlobalRef) { overviewSectionGlobalRef.classList.add('section-hidden'); overviewSectionGlobalRef.style.maxHeight = "0px"; }
             if (archiveSectionGlobalRef) { archiveSectionGlobalRef.classList.add('section-hidden'); archiveSectionGlobalRef.style.maxHeight = "0px"; }
+            
             detailsContainerGlobalRef.innerHTML = detailHtml;
             detailsContainerGlobalRef.classList.remove('section-hidden');
             detailsContainerGlobalRef.style.maxHeight = detailsContainerGlobalRef.scrollHeight + "px"; 
+            
             detailsContainerGlobalRef.querySelector('.back-button').addEventListener('click', hidePositionDetails);
             window.scrollTo(0, 0);
         }
 
         function hidePositionDetails() {
+             // ... (Restlicher Code für hidePositionDetails bleibt gleich wie in deiner vorherigen Version)
             if (detailsContainerGlobalRef) { detailsContainerGlobalRef.classList.add('section-hidden'); detailsContainerGlobalRef.style.maxHeight = "0px"; }
             if (overviewSectionGlobalRef) { overviewSectionGlobalRef.classList.remove('section-hidden'); overviewSectionGlobalRef.style.maxHeight = overviewSectionGlobalRef.scrollHeight + "px"; }
             if (archiveSectionGlobalRef && document.querySelector('.archived-position')) { archiveSectionGlobalRef.classList.remove('section-hidden'); archiveSectionGlobalRef.style.maxHeight = archiveSectionGlobalRef.scrollHeight + "px"; }
