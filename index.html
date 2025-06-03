@@ -10,21 +10,20 @@
 
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 25px;} /* Mehr margin-bottom */
+        h1.main-title { text-align: center; color: #2c3e50; margin-bottom: 25px;}
         
-        /* --- NEU: Kompakter Statistik-Block --- */
         #compact-stats-container {
             display: flex;
-            justify-content: space-around; /* Oder space-between für mehr Abstand */
-            gap: 15px; /* Abstand zwischen den Blöcken */
+            justify-content: space-around; 
+            gap: 15px; 
             max-width: 700px;
-            margin: 0 auto 25px auto; /* Zentriert und mit Abstand nach unten */
-            flex-wrap: wrap; /* Umbruch bei kleineren Bildschirmen */
+            margin: 0 auto 25px auto; 
+            flex-wrap: wrap; 
         }
 
         .compact-stat-item {
-            flex-basis: calc(50% - 10px); /* Bei 2 Items, mit gap berücksichtigt */
-            min-width: 280px; /* Mindestbreite, bevor Umbruch sinnvoll wird */
+            flex-basis: calc(50% - 10px); 
+            min-width: 280px; 
             background-color: #e9ecef;
             padding: 15px;
             border-radius: 8px;
@@ -33,33 +32,30 @@
             animation: fadeIn 0.5s ease-out forwards;
             opacity: 0;
         }
-        .compact-stat-item:nth-child(1) { animation-delay: 0.1s; } /* Gesamtprofit */
-        .compact-stat-item:nth-child(2) { animation-delay: 0.15s; background-color: #dde5ed; } /* Ø Einnahmen */
-
+        .compact-stat-item:nth-child(1) { animation-delay: 0.1s; } 
+        .compact-stat-item:nth-child(2) { animation-delay: 0.15s; background-color: #dde5ed; } 
 
         .compact-stat-item h3 {
             margin-top: 0;
             margin-bottom: 8px;
             color: #495057;
-            font-size: 1.05em; /* Etwas kleiner für kompakte Ansicht */
+            font-size: 1.05em; 
         }
 
         .compact-stat-item p {
             margin: 5px 0;
-            font-size: 1.2em; /* Wert größer */
+            font-size: 1.2em; 
             font-weight: bold;
         }
-        /* --- Ende Neuer Kompakter Statistik-Block --- */
 
-        /* --- NEU: Fortschrittsbalken --- */
         #investment-progress-section {
-            max-width: 700px;
-            margin: 0 auto 30px auto; /* Zentriert und mit Abstand nach unten */
+            max-width: 380px; /* Angepasst an Kartenbreite für Desktop */
+            margin: 0 auto 30px auto; 
             padding: 15px;
             background-color: #f8f9fa;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            animation: fadeIn 0.5s 0.2s ease-out forwards; /* Etwas spätere Animation */
+            animation: fadeIn 0.5s 0.2s ease-out forwards; 
             opacity: 0;
         }
 
@@ -67,7 +63,7 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            font-size: 0.95em;
+            font-size: 0.9em; /* Etwas kleiner für mehr Platz */
             color: #333;
             font-weight: 500;
         }
@@ -83,19 +79,18 @@
 
         #investmentProgressBarFill {
             height: 100%;
-            width: 0%; /* Startet bei 0% */
-            background-color: #4CAF50; /* Standard Grün */
-            border-radius: 6px; /* Etwas weniger als Container für "inset" Effekt */
+            width: 0%; 
+            background-color: #4CAF50; 
+            border-radius: 6px; 
             transition: width 0.6s ease-in-out, background-color 0.3s ease;
             text-align: center;
             color: white;
-            line-height: 22px; /* Vertikal zentrierter Text */
+            line-height: 22px; 
             font-size: 0.8em;
             font-weight: bold;
-            overflow: hidden; /* Verhindert, dass Text überläuft */
+            overflow: hidden; 
             white-space: nowrap;
         }
-        /* --- Ende Fortschrittsbalken --- */
 
 
         .positions-overview, .positions-archive {
@@ -125,26 +120,16 @@
         }
         .positions-overview .position-summary-card:nth-child(1), .positions-archive .position-summary-card:nth-child(1) { animation-delay: 0.3s; }
         .positions-overview .position-summary-card:nth-child(2), .positions-archive .position-summary-card:nth-child(2) { animation-delay: 0.45s; }
-        .positions-overview .position-summary-card:nth-child(3), .positions-archive .position-summary-card:nth-child(3) { animation-delay: 0.6s; }
-        .positions-overview .position-summary-card:nth-child(4), .positions-archive .position-summary-card:nth-child(4) { animation-delay: 0.75s; }
+        /* ... weitere Animation Delays ... */
 
         .position-summary-card:hover {
             transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
         .position-summary-card h2 {
-            margin-top: 0; 
-            font-size: 1.15em; 
-            color: #34495e;
-            border-bottom: none; 
-            padding-bottom: 0;  
-            margin-bottom: 12px;
-            width: 100%; 
-            text-align: center; 
-            display: flex; 
-            justify-content: center;
-            align-items: center;
-            min-height: 30px; 
+            margin-top: 0; font-size: 1.15em; color: #34495e; border-bottom: none; 
+            padding-bottom: 0; margin-bottom: 12px; width: 100%; text-align: center; 
+            display: flex; justify-content: center; align-items: center; min-height: 30px; 
         }
 
         .position-summary-card .card-content { flex-grow: 1; width: 100%; }
@@ -154,10 +139,8 @@
         .position-summary-card p small.sub-info { font-size: 0.8em; color: #777; }
 
         .chart-and-recent-fees { 
-            margin-top: 10px; margin-bottom: 10px; 
-            border-top: 1px solid #eee; padding-top: 10px;
-            width: 100%; 
-            display: flex; flex-direction: column; align-items: center; 
+            margin-top: 10px; margin-bottom: 10px; border-top: 1px solid #eee; padding-top: 10px;
+            width: 100%; display: flex; flex-direction: column; align-items: center; 
         }
         .price-chart-container { 
             width: 95%; max-width: 320px; height: 150px; 
@@ -191,82 +174,33 @@
 
         .time-in-range-display {
             text-align:center; margin-bottom:15px; padding:12px; background-color:#e7f3fe; 
-            border:1px solid #b3d7ff; border-radius:5px;
-            width: 90%; 
-            max-width: 500px; 
-            box-sizing: border-box;
+            border:1px solid #b3d7ff; border-radius:5px; width: 90%; max-width: 500px; box-sizing: border-box;
         }
-        .time-in-range-display p {
-            margin:0; font-size:1.1em; color:#004085;
-        }
-         .time-in-range-display strong {
-            font-weight: 600;
-         }
-        .time-in-range-display span {
-            font-size:1.3em; font-weight:bold; color: #0056b3;
-        }
-         .time-in-range-display .data-unavailable {
-            font-size: 0.9em; color: #555;
-         }
+        .time-in-range-display p { margin:0; font-size:1.1em; color:#004085; }
+        .time-in-range-display strong { font-weight: 600; }
+        .time-in-range-display span { font-size:1.3em; font-weight:bold; color: #0056b3; }
+        .time-in-range-display .data-unavailable { font-size: 0.9em; color: #555; }
 
         .position-block { 
-            border: 1px solid #ccc; 
-            padding: 15px; 
-            margin-bottom: 25px;
-            border-radius: 8px; 
-            background-color: #fff; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            animation: fadeInDetail 0.4s ease-out forwards;
-            opacity: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center; 
-            text-align: center; 
+            border: 1px solid #ccc; padding: 15px; margin-bottom: 25px;
+            border-radius: 8px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: fadeInDetail 0.4s ease-out forwards; opacity: 0;
+            display: flex; flex-direction: column; align-items: center; text-align: center; 
         }
         .position-title { 
-            font-size: 1.4em; 
-            margin-bottom: 15px; 
-            color: #34495e; 
-            border-bottom: none; 
-            padding-bottom: 0px; 
-            width: 100%; 
-            box-sizing: border-box; 
-            text-align: center;
-            display: flex; 
-            justify-content: center;
-            align-items: center;
-            min-height: 40px; 
+            font-size: 1.4em; margin-bottom: 15px; color: #34495e; border-bottom: none; 
+            padding-bottom: 0px; width: 100%; box-sizing: border-box; text-align: center;
+            display: flex; justify-content: center; align-items: center; min-height: 40px; 
         }
         .position-block table { 
-            border-collapse: collapse; 
-            width: 100%; 
-            max-width: 600px; 
-            margin-top: 15px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 2px 3px rgba(0,0,0,0.1); 
-            background-color: #fff; 
+            border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 15px; 
+            margin-bottom: 20px; box-shadow: 0 2px 3px rgba(0,0,0,0.1); background-color: #fff; 
         }
-        .position-block th, .position-block td { 
-            border: 1px solid #ddd; 
-            padding: 8px; 
-            text-align: left; 
-        }
-        .position-block th { 
-            background-color: #e8eff5; 
-            color: #2c3e50; 
-            font-weight: bold; 
-        }
-        .position-block tr:nth-child(even) { 
-            background-color: #f9f9f9; 
-        }
-        .position-block td:nth-child(2), 
-        .position-block td:nth-child(3),
-        .position-block td:nth-child(4) {
-            text-align: right;
-        }
-        .position-block td:first-child { 
-            text-align: center; 
-        }
+        .position-block th, .position-block td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .position-block th { background-color: #e8eff5; color: #2c3e50; font-weight: bold; }
+        .position-block tr:nth-child(even) { background-color: #f9f9f9; }
+        .position-block td:nth-child(2), .position-block td:nth-child(3), .position-block td:nth-child(4) { text-align: right; }
+        .position-block td:first-child { text-align: center; }
         
         #data-container p.error-message { color: red; font-weight: bold; text-align:center; }
         #data-container p.loading-message { text-align: center; font-size: 1.1em; }
@@ -278,89 +212,36 @@
         .section-hidden { opacity: 0; max-height: 0px !important; pointer-events: none; }
 
         .position-id-button {
-            display: inline-block; 
-            padding: 8px 12px;
-            background-color: #f0f2f5; 
-            color: #34495e; 
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600; 
+            display: inline-block; padding: 8px 12px; background-color: #f0f2f5; 
+            color: #34495e; text-decoration: none; border-radius: 6px; font-weight: 600; 
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease;
-            cursor: pointer;
-            font-size: 0.9em; 
-            line-height: normal; 
-            border: 1px solid #d0d7de; 
-            white-space: nowrap; 
+            cursor: pointer; font-size: 0.9em; line-height: normal; border: 1px solid #d0d7de; white-space: nowrap; 
         }
+        .active-position .position-id-button { background-color: #e6f7f0; border-color: #a3d9c2; color: #20634a; }
+        .active-position .position-id-button:hover { background-color: #d1f0e3; color: #174a36; }
+        .position-id-button:hover { background-color: #e4e8ed; color: #2c3e50; transform: translateY(-1px); }
+        .position-id-button small { font-weight: normal; color: #7f8c8d; font-size: 0.9em; margin-left: 4px; }
 
-        .active-position .position-id-button { 
-             background-color: #e6f7f0; 
-             border-color: #a3d9c2;
-             color: #20634a;
-        }
-        .active-position .position-id-button:hover {
-             background-color: #d1f0e3;
-             color: #174a36;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDetail { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-        .position-id-button:hover {
-            background-color: #e4e8ed;
-            color: #2c3e50;
-            transform: translateY(-1px);
-        }
-
-        .position-id-button small { 
-            font-weight: normal;
-            color: #7f8c8d; 
-            font-size: 0.9em; 
-            margin-left: 4px; 
-        }
-
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInDetail { 
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        @media (max-width: 720px) { /* Schwelle für kompakte Stats angepasst */
-             #compact-stats-container {
-                flex-direction: column; /* Untereinander auf kleineren Bildschirmen */
-                align-items: center;
-            }
-            .compact-stat-item {
-                flex-basis: 100%; /* Volle Breite, wenn untereinander */
-                width: 90%; /* Maximale Breite, um nicht ganz an den Rand zu gehen */
-                max-width: 400px; /* Max Breite für einen einzelnen Block */
-            }
+        @media (max-width: 720px) {
+             #compact-stats-container { flex-direction: column; align-items: center; }
+            .compact-stat-item { flex-basis: 100%; width: 90%; max-width: 400px; }
+            #investment-progress-section { max-width: 400px; width: 90%; } 
         }
 
         @media (max-width: 600px) {
-            .position-block {
-                padding: 10px; 
-            }
-            .position-title {
-                font-size: 1.2em; 
-            }
-            .position-summary-card h2 {
-                font-size: 1.1em; 
-            }
-            .position-id-button {
-                padding: 7px 10px; 
-                font-size: 0.85em; 
-            }
-            .position-block th, .position-block td {
-                padding: 6px; 
-                font-size: 0.9em; 
-            }
-            .time-in-range-display {
-                width: 95%; 
-            }
-            .compact-stat-item h3 { font-size: 1em; } /* Anpassung für Mobile */
-            .compact-stat-item p { font-size: 1.1em; } /* Anpassung für Mobile */
+            .position-block { padding: 10px; }
+            .position-title { font-size: 1.2em; }
+            .position-summary-card h2 { font-size: 1.1em; }
+            .position-id-button { padding: 7px 10px; font-size: 0.85em; }
+            .position-block th, .position-block td { padding: 6px; font-size: 0.9em; }
+            .time-in-range-display { width: 95%; }
+            .compact-stat-item h3 { font-size: 1em; } 
+            .compact-stat-item p { font-size: 1.1em; } 
+             .progress-label-container span:first-child { max-width: calc(100% - 50px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;} /* Verhindert Umbruch des Labels */
+
         }
     </style>
 </head>
@@ -480,12 +361,17 @@
                 
                 // --- BERECHNUNGEN FÜR STATISTIKEN & FORTSCHRITTSBALKEN ---
                 let totalProfitAllPositionsUsd = 0;
-                let totalInitialInvestmentAllPositions = 0;
                 let avgDailyEarningsActivePosition = 0;
+                let initialInvestmentActivePosition = 0; // NEU: Für das Initialinvestment der aktiven Position
 
                 const activePositionKey = sortedPositionKeys.find(key => allData[key].is_active === true);
+                
                 if (activePositionKey) {
                     const activePosData = allData[activePositionKey];
+                    if (activePosData.initial_investment_usd) { // Initialinvestment der aktiven Position holen
+                        initialInvestmentActivePosition = parseFloat(activePosData.initial_investment_usd);
+                    }
+
                     let totalEarnedUsdForActive = 0;
                     let daysInHistoryForActive = 0;
                     if (activePosData.history) {
@@ -502,11 +388,9 @@
                     }
                 }
 
+                // Gesamtprofit ALLER Positionen berechnen
                 for (const positionIdKey of sortedPositionKeys) {
                     const posData = allData[positionIdKey];
-                    if (posData.initial_investment_usd) {
-                        totalInitialInvestmentAllPositions += parseFloat(posData.initial_investment_usd);
-                    }
                     const historyDates = posData.history ? Object.keys(posData.history) : [];
                     historyDates.forEach(date => {
                         const dayData = posData.history[date];
@@ -530,7 +414,7 @@
                     </div>
                     <div id="investment-progress-section">
                         <div class="progress-label-container">
-                            <span>Profit / Initialinvestments</span>
+                            <span>Gesamtprofit / Initial (aktiv)</span> 
                             <span id="investmentProgressText">0%</span>
                         </div>
                         <div id="investmentProgressBarContainer">
@@ -543,14 +427,14 @@
                 let archiveHtml = '<div class="positions-archive section-container"><h2 class="archive-title">Archivierte Positionen</h2>';
                 let hasActive = false, hasArchived = false;
 
-                // Loop for position cards (remains largely the same, just ensure totalProfitAllPositionsUsd is calculated once above)
+                // Loop for position cards
                 for (const positionIdKey of sortedPositionKeys) {
                     const posData = allData[positionIdKey];
                     const posNum = positionIdKey.replace('position_', '');
                     const isActive = posData.is_active === true;
                     const uniswapLink = `https://app.uniswap.org/positions/v3/arbitrum/${posNum}`;
 
-                    let currentPositionTotalProfitUsd = 0; // Recalculate for individual card display
+                    let currentPositionTotalProfitUsd = 0; 
                     const historyDates = posData.history ? Object.keys(posData.history).sort((a, b) => new Date(b) - new Date(a)) : [];
                     historyDates.forEach(date => {
                         const dayData = posData.history[date];
@@ -619,48 +503,50 @@
                 }
                 overviewHtml += '</div>'; archiveHtml += '</div>';
                 
-                let finalHtml = summaryHtml; // Start with new summary blocks
+                let finalHtml = summaryHtml; 
                 if (hasActive) finalHtml += overviewHtml;
                 else finalHtml += '<div class="positions-overview section-container"><p class="loading-message">Keine aktiven Positionen.</p></div>';
                 if (hasArchived) finalHtml += archiveHtml;
                 finalHtml += '<div id="details-section-container" class="section-container section-hidden"></div>';
                 dataContainer.innerHTML = finalHtml;
 
-                // --- FORTSCHRITTSBALKEN AKTUALISIEREN ---
+                // --- FORTSCHRITTSBALKEN AKTUALISIEREN MIT NEUER LOGIK ---
                 const investmentProgressBarFillEl = document.getElementById('investmentProgressBarFill');
                 const investmentProgressTextEl = document.getElementById('investmentProgressText');
 
                 if (investmentProgressBarFillEl && investmentProgressTextEl) {
-                    if (totalInitialInvestmentAllPositions > 0) {
-                        let progressPercent = (totalProfitAllPositionsUsd / totalInitialInvestmentAllPositions) * 100;
-                        let barFillPercent = Math.min(Math.max(progressPercent, 0), 100); // Balken 0-100%
+                    // Verwende initialInvestmentActivePosition hier
+                    if (activePositionKey && initialInvestmentActivePosition > 0) { 
+                        let progressPercent = (totalProfitAllPositionsUsd / initialInvestmentActivePosition) * 100;
+                        let barFillPercent = Math.min(Math.max(progressPercent, 0), 100); 
                         
                         investmentProgressBarFillEl.style.width = `${barFillPercent}%`;
                         investmentProgressTextEl.textContent = `${progressPercent.toFixed(1)}%`;
                         
-                        // Optional: Text im Balken nur wenn Platz ist
-                        if (barFillPercent > 15) { // Nur anzeigen, wenn Balken etwas gefüllt ist
+                        if (barFillPercent > 15) {
                              investmentProgressBarFillEl.textContent = `${progressPercent.toFixed(0)}%`;
                         } else {
                              investmentProgressBarFillEl.textContent = '';
                         }
 
-
                         if (progressPercent < 0) {
-                            investmentProgressBarFillEl.style.backgroundColor = '#dc3545'; // Rot
+                            investmentProgressBarFillEl.style.backgroundColor = '#dc3545'; 
                             investmentProgressTextEl.style.color = '#dc3545';
                         } else if (progressPercent >= 100) {
-                            investmentProgressBarFillEl.style.backgroundColor = '#007bff'; // Blau
+                            investmentProgressBarFillEl.style.backgroundColor = '#007bff'; 
                             investmentProgressTextEl.style.color = '#007bff';
                         } else {
-                            investmentProgressBarFillEl.style.backgroundColor = '#4CAF50'; // Grün
+                            investmentProgressBarFillEl.style.backgroundColor = '#4CAF50'; 
                             investmentProgressTextEl.style.color = '#4CAF50';
                         }
-                    } else {
+                    } else { // Fallback, wenn keine aktive Position oder kein Initialinvest für aktive Position
                         investmentProgressBarFillEl.style.width = '0%';
                         investmentProgressTextEl.textContent = 'N/A';
                         investmentProgressBarFillEl.textContent = '';
-                        investmentProgressTextEl.style.color = '#777'; // Grau für N/A
+                        investmentProgressTextEl.style.color = '#777'; 
+                        // Optional: Anderes Label für den Balken
+                        const progressLabelEl = document.querySelector('#investment-progress-section .progress-label-container span:first-child');
+                        if(progressLabelEl) progressLabelEl.textContent = "ROI (Aktive Pos. Initial) N/A";
                     }
                 }
 
