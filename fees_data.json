@@ -1017,14 +1017,14 @@
           "token1_actual": 0.00124081261478318,
           "token0_usd": 1.87,
           "token1_usd": 1.72,
-          "total_usd": 5.59
+          "total_usd": 3.59
         },
         "daily_earned_fees": {
           "token0_actual": 2.683e-05,
           "token1_actual": 0.00124081261478318,
           "token0_usd": 1.87,
           "token1_usd": 1.72,
-          "total_usd": 5.59
+          "total_usd": 3.59
         },
         "position_range": {
           "price_lower": 0.022442294357401932,
