@@ -1442,12 +1442,35 @@
           "base_token_for_price": "WETH",
           "quote_token_for_price": "WBTC"
         }
+      },
+      "2025-07-13": {
+        "total_unclaimed_fees": {
+          "token0_actual": 6.26e-05,
+          "token1_actual": 0.00242795058326023,
+          "token0_usd": 7.405141800000001,
+          "token1_usd": 7.234370116893846,
+          "total_usd": 14.639511916893847
+        },
+        "daily_earned_fees": {
+          "token0_actual": 7.570000000000004e-06,
+          "token1_actual": 0.00027866117794483197,
+          "token0_usd": 0.8954780100000005,
+          "token1_usd": 0.8303044190279802,
+          "total_usd": 1.7257824290279808
+        },
+        "position_range": {
+          "price_lower": 0.023711130273746484,
+          "price_upper": 0.026204720598051148,
+          "current_market_price": 0.025192802076869022,
+          "base_token_for_price": "WETH",
+          "quote_token_for_price": "WBTC"
+        }
       }
     },
     "is_active": true,
     "initial_investment_usd": 2470.0,
     "token_pair_symbols": "WBTC/WETH",
     "time_in_range_24h_percentage": 100.0,
-    "last_updated_utc": "2025-07-12T17:19:39Z"
+    "last_updated_utc": "2025-07-13T17:19:44Z"
   }
 }
