@@ -1669,7 +1669,7 @@
         }
       }
     },
-    "is_active": true,
+    "is_active": false,
     "initial_investment_usd": 2541.0,
     "token_pair_symbols": "WBTC/WETH",
     "time_in_range_24h_percentage": 0.0,
