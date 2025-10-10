@@ -2044,5 +2044,11 @@
     "price": 0.035854889841365783,
     "base_token": "WETH",
     "quote_token": "WBTC"
+  },
+  {
+    "timestamp": "2025-10-10T07:14:04.119892Z",
+    "price": 0.035691284378705106,
+    "base_token": "WETH",
+    "quote_token": "WBTC"
   }
 ]
