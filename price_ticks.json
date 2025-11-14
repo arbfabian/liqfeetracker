@@ -1,11 +1,5 @@
 [
   {
-    "timestamp": "2025-10-30T06:22:09.208646Z",
-    "price": 0.035455610213537644,
-    "base_token": "WETH",
-    "quote_token": "WBTC"
-  },
-  {
     "timestamp": "2025-10-30T07:14:17.431232Z",
     "price": 0.03533275288436721,
     "base_token": "WETH",
@@ -1976,6 +1970,12 @@
   {
     "timestamp": "2025-11-14T05:15:11.616323Z",
     "price": 0.0324828943791416,
+    "base_token": "WETH",
+    "quote_token": "WBTC"
+  },
+  {
+    "timestamp": "2025-11-14T06:23:19.885450Z",
+    "price": 0.03272790405755229,
     "base_token": "WETH",
     "quote_token": "WBTC"
   }
